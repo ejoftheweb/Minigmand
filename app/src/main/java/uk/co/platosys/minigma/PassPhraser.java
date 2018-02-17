@@ -14,10 +14,13 @@ public class PassPhraser {
     /**
      *  in the Minigma library, a Key is unlocked with a Passphrase, which is a char array.
      *
-     *  Random passphrases are known to be more secure than human-generated ones which are
+     * Passphraser generates random-word passphrases. There is some evidence that random-word
+     * passphrases are easier to remember for a similar level of entropy than random-character ones,
+     * even though the resulting passphrase is much longer.
      *
+     *  Random passphrases are known to be more secure than human-generated ones.     *
      *
-     *  Passphraser generates passphrases from the EFF alternative short-list which is 6^4 words
+     *  Passphraser generates random-word passphrases from the EFF alternative short-list which is 6^4 words
      *  long.
      *
      *
@@ -27,10 +30,9 @@ public class PassPhraser {
     private List<String> wordList;
     public  static int WORDLIST_SIZE=1297;
     public static final String WORDSEPARATOR = " ";
+    public static final char WORDSEPARATOR_CHAR=' ';
 
-    public PassPhraser(){
 
-    }
     public static char[] getPassPhrase(int words) {
         SecureRandom secureRandom = new SecureRandom();
         StringBuffer buffer= new StringBuffer();
@@ -47,7 +49,25 @@ public class PassPhraser {
         }
         return buffer.toString().toCharArray();
     }
-
+    //Returns a String array from a char[].
+    public static List<String> toWordList(char[] passphrase) {
+        ArrayList<String> words = new ArrayList<>();
+        StringBuffer stringBuffer = null;
+        for (char ch : passphrase) {
+            stringBuffer = new StringBuffer();
+            if (ch != WORDSEPARATOR_CHAR) {
+                stringBuffer.append(ch);
+            } else {
+                String word = stringBuffer.toString();
+                words.add(word);
+                stringBuffer = new StringBuffer();
+            }
+        }
+        if (stringBuffer != null) {
+            words.add(stringBuffer.toString());
+        }
+        return words;
+    }
 
 }
 
