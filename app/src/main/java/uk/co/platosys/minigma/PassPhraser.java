@@ -20,8 +20,8 @@ public class PassPhraser {
      *
      *  Random passphrases are known to be more secure than human-generated ones.     *
      *
-     *  Passphraser generates random-word passphrases from the EFF alternative short-list which is 6^4 words
-     *  long.
+     * You can specify alternative wordlists supported by Effwords. At the moment, Effwords only
+     * supports the three EFF lists.
      *
      *
      *
@@ -31,7 +31,9 @@ public class PassPhraser {
     public  static int WORDLIST_SIZE=1297;
     public static final String WORDSEPARATOR = " ";
     public static final char WORDSEPARATOR_CHAR=' ';
-
+    public static int LONGWORDLIST=Effwords.EFF_LONGLIST;
+    public static int SHORTWORDLIST=Effwords.EFF_SHORTLIST;
+    public static int ALTWORDLIST=Effwords.EFF_DEFAULTLIST;
 
     public static char[] getPassPhrase(int words) {
         SecureRandom secureRandom = new SecureRandom();
@@ -42,19 +44,34 @@ public class PassPhraser {
                 if (i > 0) {
                     buffer.append(WORDSEPARATOR);
                 }
-                buffer.append(Effwords.getWord(Effwords.EFF_DEFAULTLIST,word));
+                buffer.append(Effwords.getWord(Effwords.EFF_LONGLIST,word));
             }catch (Exception x) {
                 Exceptions.dump(x);
             }
         }
         return buffer.toString().toCharArray();
     }
-    //Returns a String array from a char[].
-    public static List<String> toWordList(char[] passphrase) {
+    public static char[] getPassPhrase(int wordList, int words) {
+        SecureRandom secureRandom = new SecureRandom();
+        StringBuffer buffer= new StringBuffer();
+        for (int i = 0; i < words; i++) {
+            try {
+                int word = secureRandom.nextInt(WORDLIST_SIZE);
+                if (i > 0) {
+                    buffer.append(WORDSEPARATOR);
+                }
+                buffer.append(Effwords.getWord(wordList,word));
+            }catch (Exception x) {
+                Exceptions.dump(x);
+            }
+        }
+        return buffer.toString().toCharArray();
+    }
+    //this method really belongs in minigmand.passphraser, it will get there eventually.
+    public  List<String> toWordList(char[] passphrase) {
         ArrayList<String> words = new ArrayList<>();
-        StringBuffer stringBuffer = null;
+        StringBuffer stringBuffer = new StringBuffer();
         for (char ch : passphrase) {
-            stringBuffer = new StringBuffer();
             if (ch != WORDSEPARATOR_CHAR) {
                 stringBuffer.append(ch);
             } else {
