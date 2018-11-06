@@ -34,12 +34,12 @@ import java.util.List;
 public abstract class BaseSignature {
     protected PGPSignature pgpSignature;
     protected String shortDigest;
-    protected String signerUserID;
 
-    protected BaseSignature (PGPSignature pgpSignature, String signerUserID){
+
+    protected BaseSignature (PGPSignature pgpSignature){
         this.pgpSignature=pgpSignature;
         this.shortDigest=Digester.shortDigest(pgpSignature);
-        this.signerUserID=signerUserID;
+
     }
     protected BaseSignature (String string){
 
@@ -143,9 +143,6 @@ public abstract class BaseSignature {
         return pgpSignature.getKeyID();
     }
 
-    public String getSignerUserID() {
-        return signerUserID;
-    }
 
     @Override
     public boolean equals(Object object){

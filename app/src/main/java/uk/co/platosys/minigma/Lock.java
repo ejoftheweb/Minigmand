@@ -303,7 +303,7 @@ public class Lock {
             pgpSignatureGenerator.init(0x20, pgpPrivateKey);
             PGPSignature revocationSignature = pgpSignatureGenerator.generateCertification(pgpPublicKey);
             pgpPublicKey = PGPPublicKey.addCertification(pgpPublicKey,revocationSignature);
-            return new Certificate(revocationSignature, key.getUserID());
+            return new Certificate(revocationSignature);
         }catch(PGPException pgpex){
             Exceptions.dump(pgpex);
             return null;
@@ -321,7 +321,7 @@ public class Lock {
             pgpSignatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
             PGPSignature revokerSignature = pgpSignatureGenerator.generate();
             publicKey = PGPPublicKey.addCertification(publicKey,revokerSignature);
-            return new Certificate(revokerSignature, userID);
+            return new Certificate(revokerSignature);
 
         }catch(Exception x){
             Exceptions.dump(x);
@@ -404,7 +404,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         PGPSignature signature = (PGPSignature) signatures.next();
                         if(signature.isCertification()){
                             isCertified=(signature.getKeyID()==key.getLongKeyID());
-                            if(isCertified){return new Certificate(signature, lockStore.getUserID(key.getKeyID()));}
+                            if(isCertified){return new Certificate(signature);}
                         }
                     }
                     if(! isCertified) {
@@ -415,7 +415,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         pgpPublicKeyRing = PGPPublicKeyRing.insertPublicKey(pgpPublicKeyRing, publicKey);
                         publicKeyRingCollection = PGPPublicKeyRingCollection.addPublicKeyRing(publicKeyRingCollection, pgpPublicKeyRing);
                         lockStore.addLock(this);
-                        return new Certificate(pgpSignature, lockStore.getUserID(key.getKeyID()));
+                        return new Certificate(pgpSignature);
                     }
                 }catch(Exception x){
                     throw new MinigmaException("Problem certifying key", x);
@@ -443,7 +443,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         if (pgpSignature.isCertification()) {
                             long keyID = pgpSignature.getKeyID();
                             String signerUserID = lockStore.getUserID(keyID);
-                            Certificate certificate = new Certificate(pgpSignature, signerUserID);
+                            Certificate certificate = new Certificate(pgpSignature);
                             certificates.add(certificate);
                         }
 
