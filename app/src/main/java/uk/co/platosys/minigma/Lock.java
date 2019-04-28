@@ -23,7 +23,10 @@ package uk.co.platosys.minigma;
 
 
 
+import android.util.Log;
+
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -48,6 +51,7 @@ import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.exceptions.SignatureException;
 import uk.co.platosys.minigma.exceptions.UnsupportedAlgorithmException;
 import uk.co.platosys.minigma.utils.Kidney;
+import uk.co.platosys.minigma.utils.MinigmaOutputStream;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 
@@ -187,8 +191,39 @@ public class Lock {
         byte[] encryptedData=CryptoEngine.encrypt(compressedData, this);
         return encryptedData;
     }
+
+    /**Encrypts the given String and returns the cyphertext as a String.
+     *
+     * @param string
+     * @return
+     * @throws MinigmaException
+     */
     public String lockAsString(String string) throws MinigmaException{
         return MinigmaUtils.encode(lock(string));
+    }
+
+    /**
+     * Returns this Lock as an ASCII-Armored String, e.g. for submitting to
+     * keyservers.
+     * @return
+     */
+    public String toArmoredString(){
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            MinigmaOutputStream minigmaOutputStream = new MinigmaOutputStream(byteArrayOutputStream);
+            minigmaOutputStream.write(getBytes());
+            minigmaOutputStream.flush();
+            minigmaOutputStream.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
+            String string = MinigmaUtils.fromByteArray(bytes);
+            Log.d(TAG, string);
+            return string;
+
+        }catch(Exception x){
+            Exceptions.dump(x);
+            return null;
+        }
+
     }
 
     /**

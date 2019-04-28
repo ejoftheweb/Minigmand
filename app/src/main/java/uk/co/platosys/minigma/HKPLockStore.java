@@ -18,16 +18,24 @@ package uk.co.platosys.minigma;
         * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
         * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
         * SOFTWARE.*/
+import android.util.Log;
+
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
+import uk.co.platosys.minigma.utils.Kidney;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Iterator;
 
+import static java.net.HttpURLConnection.HTTP_ACCEPTED;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 
@@ -40,15 +48,24 @@ import static java.net.HttpURLConnection.HTTP_OK;
 public class HKPLockStore implements LockStore {
 
 private String host;
-private int port;
+private int port=11371; //this is the the default HKP port number
 public static final String PROTOCOL="http:";
 public static final String GET_FILE_PART="pks/lookup";
 public static final String POST_FILE_PART="pks/add";
 public static final String ARMORED_PKEY_OPEN="-----BEGIN PGP PUBLIC KEY BLOCK-----";
 public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK-----";
-    public HKPLockStore(String host, int port){
+private String TAG = "HKPLockstore";
+
+    /**
+     *  Create an instance of the HKPLockStore by specifying a hostname and a port number to the constructor.
+     *
+     * @param host
+
+     */
+    public HKPLockStore(String host){
         this.host=host;
-        this.port=port;
+
+        //should  constructor verify host's existence? How?
 
     }
 
@@ -60,6 +77,25 @@ public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK----
 
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
             httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setDoOutput(true); //changes the default method to POST.
+            httpURLConnection.addRequestProperty("op","post");
+            httpURLConnection.addRequestProperty("options", "mr");
+            OutputStream outputStream = new BufferedOutputStream( httpURLConnection.getOutputStream());
+            outputStream.write(("keytext = ").getBytes());
+            outputStream.write(lock.toArmoredString().getBytes());
+            outputStream.flush();
+            outputStream.close();
+            int response = httpURLConnection.getResponseCode();
+            switch (response){
+                case HTTP_OK:
+                    return true;
+                case HTTP_ACCEPTED:
+                    return true;
+                default:
+                    handleError(response);
+
+            }
+
             return false;
         }catch(Exception x){
             return false;
@@ -75,9 +111,36 @@ public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK----
         return false;
     }
 
+    /**This method retrieves a Lock from the server given its keyID/fingerprint*/
     @Override
     public Lock getLock(byte[] keyID) {
-        return null;
+
+        try {
+            URL url = new URL(PROTOCOL, host, port, GET_FILE_PART);
+
+            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setRequestMethod("GET");
+            httpURLConnection.addRequestProperty("op","get");
+            httpURLConnection.addRequestProperty("options", "mr");
+
+            httpURLConnection.addRequestProperty("search", Kidney.toString(keyID));
+            Log.d(TAG, url.getQuery());
+            int responseCode = httpURLConnection.getResponseCode();
+            switch (responseCode){
+                case HTTP_OK:
+                    return extractLock(httpURLConnection);
+                //break;
+                case HTTP_NOT_FOUND:
+                    break;
+
+                default:
+
+            }
+            return null;
+        }catch(Exception x){
+            Exceptions.dump(x);
+            return null;
+        }
     }
 
     @Override
@@ -85,6 +148,7 @@ public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK----
         return null;
     }
 
+    /**This method retrieves a Lock from the server given a userID*/
     @Override
     public Lock getLock(String userID) throws MinigmaException {
         try {
@@ -137,7 +201,11 @@ public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK----
     }
     @Override
     public boolean contains(String userID) {
-        return false;
+        try {
+            return (getLock(userID) instanceof Lock);
+        }catch (Exception x){
+            return false;
+        }
     }
 
     @Override
@@ -158,6 +226,13 @@ public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK----
     @Override
     public int getCount() {
         return 0;
+    }
+
+    public void setPort(int port){
+        this.port=port;
+    }
+    private void handleError(int response){
+        Log.d(TAG, "HTTP error code:"+response);
     }
 }
 
