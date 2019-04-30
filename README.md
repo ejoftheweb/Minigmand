@@ -6,7 +6,7 @@ Base64 implementation for encoding/decoding.
 To use it, just put this in the repositories section of your gradle.build file:
 maven { url "https://jitpack.io" }
 and in dependencies:
- compile 'com.github.ejoftheweb:minigmand:master-SNAPSHOT'
+ implementation 'com.github.ejoftheweb:minigmand:master-SNAPSHOT'
  
  BUT: it is very much early dev code, it is certainly not production-ready. Feedback would of course be welcome.
  
