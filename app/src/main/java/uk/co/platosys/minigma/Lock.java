@@ -89,6 +89,7 @@ public class Lock {
     private Fingerprint fingerprint;
     private PGPPublicKey publicKey;
     private String userID;
+    private String shortID;
 
 
 
@@ -108,6 +109,7 @@ public class Lock {
             PGPPublicKeyRing keyRing = (PGPPublicKeyRing) publicKeyRingCollection.getKeyRings().next();
             this.publicKey = keyRing.getPublicKey();
             this.lockID=publicKey.getFingerprint();
+            this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
             this.fingerprint=new Fingerprint(lockID);
 
         }catch(Exception x){
@@ -149,6 +151,8 @@ public class Lock {
 
             this.lockID=publicKey.getFingerprint();
             this.fingerprint=new Fingerprint(lockID);
+            this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
+
             //System.out.println(Kidney.toString(lockID));
             //System.out.println(Kidney.toString(fingerprint));
         }catch(Exception x){
@@ -171,6 +175,8 @@ public class Lock {
         this.publicKey=pubkey;
         this.lockID=publicKey.getFingerprint();
         this.fingerprint=new Fingerprint(lockID);
+        this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
+
     }
 
     /**
@@ -225,6 +231,8 @@ public class Lock {
         }
 
     }
+
+
 
     /**
      * @return true if it verifies against this Lock, false otherwise.
@@ -530,5 +538,12 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
     }
     public String getUserID(){
         return userID;
+    }
+
+    /**
+     * @return the PGP 64-bit key ID encoded as an 8-character Base64 String.
+    */
+    public String getShortID(){
+        return shortID;
     }
 }
