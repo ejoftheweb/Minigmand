@@ -4,10 +4,10 @@ SpongyCastle ones (because of a naming conflict in Android). And some other twea
 Base64 implementation for encoding/decoding.
 
 To use it, just put this in the repositories section of your gradle.build file:\n
-maven { url "https://jitpack.io" } \n
-and in dependencies:\n\n
+maven { url "https://jitpack.io" } 
+and in dependencies:
  implementation 'com.github.ejoftheweb:minigmand:master-SNAPSHOT'
- \n\n
+
  BUT: it is very much early dev code, it is certainly not production-ready. Feedback would of course be welcome.
  
  Usage.
