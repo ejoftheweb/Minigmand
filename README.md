@@ -12,6 +12,8 @@ and in dependencies:
  
  Usage.
  
+ In Minigma, a public key is called a Lock and a private key is called a Key. You lock something with a Lock and you need a corresponding Key to unlock it. But they are all OpenPGP-compatible keys so you can use them in other OpenPGP applications (such as GPG). 
+ 
  to create a key-pair(a lockset): LockSmith.createLockSet(File keyDirectory, //where the generated secret Key is to be stored
                                                LockStore lockStore, //where the public Lock will be stored
                                                String username, //the username/email associated with the lockset
