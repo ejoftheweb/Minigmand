@@ -172,4 +172,5 @@ public class MinigmaUtils {
         buffer.flush();
         return  buffer.toByteArray();
     }
+
 }

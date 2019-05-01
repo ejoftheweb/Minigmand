@@ -53,7 +53,7 @@ public class Minigma {
     public static final Provider PROVIDER = initialiseProvider();
     public static final String LOCK_DIRNAME="lock";
     public static final String KEY_DIRNAME="key";
-    public static final String VERSION="Minigma v0.1";
+    public static final String VERSION="v0.1.8.3";
 
     /**
      * This takes an String and encrypts it with the given Lock
