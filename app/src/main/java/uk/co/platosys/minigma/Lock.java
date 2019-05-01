@@ -175,7 +175,9 @@ public class Lock {
         this.publicKey=pubkey;
         this.lockID=publicKey.getFingerprint();
         this.fingerprint=new Fingerprint(lockID);
+        Log.d(TAG, "fingerprint is "+Kidney.toString(fingerprint.getFingerprintbytes()));
         this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
+        Log.d(TAG, "lock created with shortID "+shortID);
 
     }
 
