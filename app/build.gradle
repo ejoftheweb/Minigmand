@@ -3,7 +3,7 @@ apply plugin: 'com.android.library'
 android {
     compileSdkVersion 26
     defaultConfig {
-         minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -15,7 +15,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
+
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
@@ -31,4 +38,5 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    testImplementation 'org.robolectric:robolectric:4.2'
 }
