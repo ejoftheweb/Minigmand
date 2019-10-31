@@ -23,7 +23,10 @@ package uk.co.platosys.minigma;
 
 
 
+import android.util.Log;
+
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -48,6 +51,7 @@ import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.exceptions.SignatureException;
 import uk.co.platosys.minigma.exceptions.UnsupportedAlgorithmException;
 import uk.co.platosys.minigma.utils.Kidney;
+import uk.co.platosys.minigma.utils.MinigmaOutputStream;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 
@@ -85,6 +89,7 @@ public class Lock {
     private Fingerprint fingerprint;
     private PGPPublicKey publicKey;
     private String userID;
+    private String shortID;
 
 
 
@@ -104,6 +109,7 @@ public class Lock {
             PGPPublicKeyRing keyRing = (PGPPublicKeyRing) publicKeyRingCollection.getKeyRings().next();
             this.publicKey = keyRing.getPublicKey();
             this.lockID=publicKey.getFingerprint();
+            this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
             this.fingerprint=new Fingerprint(lockID);
 
         }catch(Exception x){
@@ -145,6 +151,8 @@ public class Lock {
 
             this.lockID=publicKey.getFingerprint();
             this.fingerprint=new Fingerprint(lockID);
+            this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
+
             //System.out.println(Kidney.toString(lockID));
             //System.out.println(Kidney.toString(fingerprint));
         }catch(Exception x){
@@ -167,6 +175,10 @@ public class Lock {
         this.publicKey=pubkey;
         this.lockID=publicKey.getFingerprint();
         this.fingerprint=new Fingerprint(lockID);
+        Log.d(TAG, "fingerprint is "+Kidney.toString(fingerprint.getFingerprintbytes()));
+        this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
+        Log.d(TAG, "lock created with shortID "+shortID);
+
     }
 
     /**
@@ -187,9 +199,42 @@ public class Lock {
         byte[] encryptedData=CryptoEngine.encrypt(compressedData, this);
         return encryptedData;
     }
+
+    /**Encrypts the given String and returns the cyphertext as a String.
+     *
+     * @param string
+     * @return
+     * @throws MinigmaException
+     */
     public String lockAsString(String string) throws MinigmaException{
         return MinigmaUtils.encode(lock(string));
     }
+
+    /**
+     * Returns this Lock as an ASCII-Armored String, e.g. for submitting to
+     * keyservers.
+     * @return
+     */
+    public String toArmoredString(){
+        try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            MinigmaOutputStream minigmaOutputStream = new MinigmaOutputStream(byteArrayOutputStream);
+            minigmaOutputStream.write(getBytes());
+            minigmaOutputStream.flush();
+            minigmaOutputStream.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
+            String string = MinigmaUtils.fromByteArray(bytes);
+            Log.d(TAG, string);
+            return string;
+
+        }catch(Exception x){
+            Exceptions.dump(x);
+            return null;
+        }
+
+    }
+
+
 
     /**
      * @return true if it verifies against this Lock, false otherwise.
@@ -303,7 +348,7 @@ public class Lock {
             pgpSignatureGenerator.init(0x20, pgpPrivateKey);
             PGPSignature revocationSignature = pgpSignatureGenerator.generateCertification(pgpPublicKey);
             pgpPublicKey = PGPPublicKey.addCertification(pgpPublicKey,revocationSignature);
-            return new Certificate(revocationSignature, key.getUserID());
+            return new Certificate(revocationSignature);
         }catch(PGPException pgpex){
             Exceptions.dump(pgpex);
             return null;
@@ -321,7 +366,7 @@ public class Lock {
             pgpSignatureGenerator.setHashedSubpackets(pgpSignatureSubpacketVector);
             PGPSignature revokerSignature = pgpSignatureGenerator.generate();
             publicKey = PGPPublicKey.addCertification(publicKey,revokerSignature);
-            return new Certificate(revokerSignature, userID);
+            return new Certificate(revokerSignature);
 
         }catch(Exception x){
             Exceptions.dump(x);
@@ -404,7 +449,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         PGPSignature signature = (PGPSignature) signatures.next();
                         if(signature.isCertification()){
                             isCertified=(signature.getKeyID()==key.getLongKeyID());
-                            if(isCertified){return new Certificate(signature, lockStore.getUserID(key.getKeyID()));}
+                            if(isCertified){return new Certificate(signature);}
                         }
                     }
                     if(! isCertified) {
@@ -415,7 +460,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         pgpPublicKeyRing = PGPPublicKeyRing.insertPublicKey(pgpPublicKeyRing, publicKey);
                         publicKeyRingCollection = PGPPublicKeyRingCollection.addPublicKeyRing(publicKeyRingCollection, pgpPublicKeyRing);
                         lockStore.addLock(this);
-                        return new Certificate(pgpSignature, lockStore.getUserID(key.getKeyID()));
+                        return new Certificate(pgpSignature);
                     }
                 }catch(Exception x){
                     throw new MinigmaException("Problem certifying key", x);
@@ -443,7 +488,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         if (pgpSignature.isCertification()) {
                             long keyID = pgpSignature.getKeyID();
                             String signerUserID = lockStore.getUserID(keyID);
-                            Certificate certificate = new Certificate(pgpSignature, signerUserID);
+                            Certificate certificate = new Certificate(pgpSignature);
                             certificates.add(certificate);
                         }
 
@@ -495,5 +540,12 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
     }
     public String getUserID(){
         return userID;
+    }
+
+    /**
+     * @return the PGP 64-bit key ID encoded as an 8-character Base64 String.
+    */
+    public String getShortID(){
+        return shortID;
     }
 }

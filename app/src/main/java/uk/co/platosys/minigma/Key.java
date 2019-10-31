@@ -212,9 +212,20 @@ public class Key {
      * @return a Base64-encoded signature String.
      * @throws MinigmaException
      */
-    public Signature sign(String toBeSigned, char[] passphrase, LockStore lockStore) throws MinigmaException{
+    public Signature sign(byte[]  toBeSigned, char[] passphrase) throws MinigmaException{
         String digest= Digester.digest(toBeSigned);
-        return SignatureEngine.sign(digest, this, passphrase, lockStore);
+        return SignatureEngine.sign(digest, this, passphrase);
+    }
+
+    /**
+     * @param toBeSigned the String to be signed
+     * @param passphrase
+     * @return a Base64-encoded signature String.
+     * @throws MinigmaException
+     */
+    public Signature sign(String toBeSigned, char[] passphrase) throws MinigmaException{
+        String digest= Digester.digest(toBeSigned);
+        return SignatureEngine.sign(digest, this, passphrase);
     }
     /**
      * @param toBeSigned the String to be signed
@@ -222,9 +233,19 @@ public class Key {
      * @return a Base64-encoded signature String.
      * @throws MinigmaException
      */
-    public Signature sign(String toBeSigned, List<Notation> notations, char[] passphrase, LockStore lockStore) throws MinigmaException{
+    public Signature sign(byte[] toBeSigned, List<Notation> notations, char[] passphrase) throws MinigmaException{
         String digest= Digester.digest(toBeSigned);
-        return SignatureEngine.sign(digest, this, notations, passphrase, lockStore);
+        return SignatureEngine.sign(digest, this, notations, passphrase);
+    }
+    /**
+     * @param toBeSigned the String to be signed
+     * @param passphrase
+     * @return a Base64-encoded signature String.
+     * @throws MinigmaException
+     */
+    public Signature sign(String toBeSigned, List<Notation> notations, char[] passphrase) throws MinigmaException{
+        String digest= Digester.digest(toBeSigned);
+        return SignatureEngine.sign(digest, this, notations, passphrase);
     }
     /**
      * This takes ciphertext and returns  the cleartext
