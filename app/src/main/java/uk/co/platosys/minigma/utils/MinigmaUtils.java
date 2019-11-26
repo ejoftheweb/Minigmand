@@ -40,9 +40,16 @@ import org.spongycastle.openpgp.bc.BcPGPObjectFactory;
 import org.spongycastle.openpgp.jcajce.JcaPGPObjectFactory;
 
 import uk.co.platosys.minigma.Minigma;
+//NOTE THIS HAS ANDROID-SPECIFIC DEPENDENCIES - IT IS DIFFERENT IN MINIGMA//
 
 /**A general utility class to encode/decode bytes to Base64. Because of the different implementations,
  * this class is slightly different in Minigmand.
+ *
+ * Note that by default, the encode/decode methods use standard Base64 encoding using Table 1 of RFC 4648.
+ * This includes characters that are unsafe to use in URLs and some filenames. If you want to use Table 2, urlsafe,
+ * use the methods that take a urlsafe boolean argument.  This behaviour may change in later releases,
+ * to defend against which it probably makes sense always to specify whether to use urlsafe encoding or not.
+ *
  */
 
 
@@ -75,6 +82,12 @@ public class MinigmaUtils {
     /** turns a base-64 encoded string into a byte array */
     public static byte[] decode(String string){
         return Base64.decode(string, Base64.DEFAULT);
+    }
+    /** turns a URL-safe base-64 encoded string into a byte array */
+    public static byte[] decode(String string, boolean urlsafe){
+        if(urlsafe){
+            return Base64.decode(string, Base64.URL_SAFE);
+        }else return decode(string);
     }
     /**converts an ordinary String  into an array of bytes**/
     public static byte[] toByteArray(String string){

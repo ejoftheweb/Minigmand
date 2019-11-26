@@ -199,6 +199,13 @@ public class Lock {
         byte[] encryptedData=CryptoEngine.encrypt(compressedData, this);
         return encryptedData;
     }
+    /**
+     * Encrypts a BigBinary with this Lock
+     *
+     */
+    public BigBinary lock(BigBinary clearBytes) throws MinigmaException{
+        return new BigBinary(lock(clearBytes.toByteArray()));
+    }
 
     /**Encrypts the given String and returns the cyphertext as a String.
      *
