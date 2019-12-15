@@ -23,4 +23,6 @@ and in dependencies:
  The LockStore can be either a MinigmaLockStore, which is PGPublic Key Ring Collection implementation, stored as a base64 text file
 on the local filesystem, or an HKPLockStore, which is an http: interface to a public keyserver. Or implement the interface yourself, which is probably best. 
 
+For more info, see the wiki.
+
    
