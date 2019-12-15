@@ -1,4 +1,6 @@
 package uk.co.platosys.minigma.votes;
+import java.security.SecureRandom;
+
 import uk.co.platosys.minigma.BigBinary;
 /**
  * The Ballot models the actual little ball of paper that gets put into the urn. Or whatever.
@@ -9,11 +11,22 @@ import uk.co.platosys.minigma.BigBinary;
  */
 public class Ballot  {
     public static final int BLANK=0;
+    public static final int TOKENBYTES=20;
     private BigBinary token;
     private int vote=BLANK;
     int pollid;
-    private Ballot (int pollid){
+
+    /**The private constructor is called by the static create method, which passes it a SecureRandom instance.
+     * It generates a BigBinary token TOKENBYTES long.
+     *
+     * @param pollid
+     * @param secureRandom
+     */
+    private Ballot (int pollid, SecureRandom secureRandom){
         this.pollid=pollid;
+        byte[] tokenbytes = new byte[TOKENBYTES];
+        secureRandom.nextBytes(tokenbytes);
+        this.token = new BigBinary(tokenbytes);
     }
 
     /**the client app instantiates a Ballot from a BigBinary consisting of the
@@ -30,7 +43,20 @@ public class Ballot  {
         this.pollid=pollid;
         this.token=paper;
     }
-
+    /**the server app instantiates a Ballot from a BigBinary consisting of the
+     * ballot token concatenated with the pollid and the vote, which is what is returned by the
+     * serialiseVoted() method.
+     * @param paper the cleartext BigBinary
+     * @param pollid
+     * @throws InvalidBallotException
+     */
+    public Ballot(BigBinary paper, int pollid, boolean count) throws InvalidBallotException {
+        int test = paper.detachInt();
+        if (test!=pollid){throw new InvalidBallotException("poll ids don't match");}
+        this.vote = paper.detachInt();
+        this.pollid=pollid;
+        this.token=paper;
+    }
     /**this method is called by the Poll once the ballot has been created. The resultant
      * BigBinary is encrypted with the Voter's public Lock so it can only be unlocked by them. It should
      * also be signed with the Officer's private Key.
@@ -52,11 +78,11 @@ public class Ballot  {
     public void vote(int vote){
         this.vote=vote;
     }
-    public static Ballot create(Poll poll){
-        return new Ballot(poll.pollid);
+    public static Ballot create(Poll poll, SecureRandom secureRandom){
+        return new Ballot(poll.pollid, secureRandom);
     }
     protected BigBinary getToken(){
         return token;
     }
-
+    protected int getVote(){return vote;}
 }

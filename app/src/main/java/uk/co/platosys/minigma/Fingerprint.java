@@ -19,23 +19,32 @@ package uk.co.platosys.minigma;
         * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
         * SOFTWARE.*/
 
+import org.spongycastle.openpgp.PGPPublicKey;
+
 import uk.co.platosys.minigma.exceptions.Exceptions;
 
 import java.nio.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * The fingerprint is an object wrapper to a byte array used to identify
+ * Fingerprint is an object wrapper to a byte array used to identify
  * keys and locks.
- * An OpenPGP fingerprint is a 160-bit number.
+ * An OpenPGP fingerprint is a 160-bit/20-byte number used to confirm keys and locks.
  */
 public class Fingerprint {
     private byte[] fingerprintbytes;
     public Fingerprint(byte[] fingerprint){
         this.fingerprintbytes=fingerprint;
     }
+
+    /**Compares this Fingerprint with another and returns true if and only if they match.
+     *
+     * @param object
+     * @return
+     */
     @Override
     public boolean equals(Object object){
         try {
@@ -46,6 +55,10 @@ public class Fingerprint {
         }
     }
 
+    /**Returns this Fingerprint as a byte array.
+     *
+     * @return
+     */
     public byte[] getFingerprintbytes() {
         return fingerprintbytes;
     }
@@ -71,7 +84,10 @@ public class Fingerprint {
             return 0;
         }
     }
-    /**
+    /**Returns a list of words representing this Fingerprint.
+     * Human-mediated comparison of fingerprints is an important part of maintaining the security of
+     * a distributed crypto-system based on Web-of-Trust.  It is much less error-prone for most people
+     * to compare natural language words than streams of numbers.
      * This returns a list of English words as long as the fingerprint (currently 20 bytes).
      * They are selected from the PGP word list.
      *
@@ -97,9 +113,32 @@ public class Fingerprint {
         }
 
         return arrayList;
-
-
     }
+
+    /**
+     * Returns length words vaguely identifying the PGPPublicKey  in question, enough for testing but not for proving
+     * @param length
+     * @return
+     */
+    public static String getTestFingerprint(PGPPublicKey pgpPublicKey, int length){
+        try {
+            Fingerprint fingerprint = new Fingerprint(pgpPublicKey.getFingerprint());
+            List<String> fp = fingerprint.getFingerprint();
+            StringBuffer buffer=new StringBuffer();// = new String[length];
+            Iterator<String> fpit = fp.iterator();
+            int i=0;
+            while (fpit.hasNext() && i<length){
+                buffer.append(fpit.next());
+                buffer.append(" ");
+                i++;
+            }
+            return buffer.toString();
+        } catch (Exception x){
+            Exceptions.dump("FP-GTF", x);
+            return null;
+        }
+    }
+
     public static final  String [] EVEN_BIOMES =new String[] {
             "aardvark", "absurd", "accrue", "acme", "adrift",
             "adult", "afflict", "ahead", "aimless", "Algol",

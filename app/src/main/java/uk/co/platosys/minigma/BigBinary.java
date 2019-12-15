@@ -16,8 +16,12 @@ import uk.co.platosys.minigma.utils.MinigmaUtils;
  * practical way of handling it, now that the ubiquity of UTF-8 has removed most of the headache of competing
  * incompatible character sets.
  *
+ * BigBinary was introduced in Minigma v0.2, replacing the earlier use of Strings as digests etc. There's
+ * thus less need for Base64 coding and decoding under the hood - because BigBinary is a byte array in an Object -
+ * and it avoids any confusion with cleartext semantic Strings.
+ *
  */
-public class BigBinary {//implements Comparable{
+public class BigBinary implements Comparable{
     private byte[] bytes;
     public BigBinary (String string)throws ParseException {
         this.bytes= MinigmaUtils.decode(string);
@@ -95,9 +99,38 @@ public class BigBinary {//implements Comparable{
         byte[] detached = detach(Ints.BYTES);
         return Ints.fromByteArray(detached);
     }
+    @Override
+    public boolean equals (Object object){
+        if (object instanceof BigBinary){
+            BigBinary bigBinary = (BigBinary) object;
+            byte[] theirs = bigBinary.toByteArray();
+            if (theirs.length != bytes.length) {return false;}
+            for (int i=0; i<bytes.length; i++){
+                if (bytes[i]!=theirs[i]){return false;}
+            }
+            return true;
+        }else{
+            return false;
+        }
+    }
+    @Override
+    public int compareTo(@NonNull Object object) {
+        if (object instanceof BigBinary){
+            BigBinary bigBinary = (BigBinary) object;
+            byte[] theirs = bigBinary.toByteArray();
+            if (theirs.length != bytes.length) {
+                //this behaviour isn't quite right. But it will do for now.
+                //TODO fixit.
+                throw new ClassCastException("comparing unequal bitlength BigBinaries");
+            }
+            for (int i=0; i<bytes.length; i++){
+                if (bytes[i]>theirs[i]) {return 1;}
+                if (bytes[i]<theirs[i]) {return -1;}
 
-    /*@Override
-    public int compareTo<BigBinary>(@NonNull BigBinary bigBinary) {
-        return 0;
-    }*/
+            }
+            return 0;//we've gone through the whole array and they're all equal.
+        }else{
+            throw new ClassCastException();
+        }
+    }
 }

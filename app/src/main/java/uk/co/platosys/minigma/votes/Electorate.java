@@ -4,8 +4,22 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
-public class Electorate implements Set<Voter> {
-    private Set<Voter> electors;
+/**Abstract class representing a Set of Voters.  Applications will need to
+ * develop their own implementation of the sendVotes() method.
+ *
+ */
+public abstract class Electorate implements Set<Voter> {
+    /**
+     *  Concrete implementations need to actually send the votes to the voters. Something like
+     *  for(Voter elector:electors){
+     *      User user = (User) elector;
+     *      String email = user.getEmail();
+     *      mailto(email, elector.getPaper(), elector.getSignature();
+     *  }
+     * @return
+     */
+    public abstract boolean  sendVotes();
+    protected Set<Voter> electors;
     public Electorate(Set<Voter> electors){
         this.electors=electors;
     }

@@ -53,9 +53,11 @@ import uk.co.platosys.minigma.utils.MinigmaOutputStream;
 
 
 /**
- * @author edward
  * The MinigmaLockStore implements the LockStore interface using  OpenPGP public keyrrings as the storage
- * medium. The file it creates is an OpenPGP public keyrring and can be read by other OpenPGP compliant software
+ *  medium. The file it creates is a text file containing an Ascii-Armored OpenPGP public keyrring
+ *  which can be read by other OpenPGP compliant software
+ *  *
+ * @author edward
  *
  *
  */
@@ -75,12 +77,13 @@ public class MinigmaLockStore implements LockStore {
      * @throws MinigmaException
      */
     public MinigmaLockStore(File file, boolean create) throws MinigmaException{
+        System.out.println("creating lockstore in "+file.getName()+" create="+Boolean.toString(create));
         this.file=file;
         if (file.exists()&&file.canRead()){
             if (!load()){
                 throw new MinigmaException("LockStore-init failed at loading");
             }else{
-                //System.out.println("MLS-loaded:"+count);
+                System.out.println("MLS-loaded:"+count);
             }
         }else{
             if(create){
@@ -88,7 +91,10 @@ public class MinigmaLockStore implements LockStore {
                 try {
                     this.pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(ringCollection);
                     save();
-                }catch (Exception x){}
+                    System.out.println("new lockstore created with filename "+file.getName());
+                }catch (Exception x){
+                    Exceptions.dump("problem creating new MinigmaLockStore file ",x);
+                }
             }else{
                 throw new MinigmaException( "LockStore-init: file doesn't exist");
             }
@@ -145,7 +151,7 @@ public class MinigmaLockStore implements LockStore {
             if (pgpPublicKeyRingCollection==null){
                 load();
             }
-            byte[] lockID = lock.getLockID();
+            byte[] lockID = lock.getFingerprint().getFingerprintbytes();
             if (pgpPublicKeyRingCollection.contains(lockID)){
                 removeLock(lockID);
             }

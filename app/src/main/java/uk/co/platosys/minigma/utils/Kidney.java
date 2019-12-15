@@ -30,9 +30,7 @@ import java.util.List;
 
 
 /**
- *
- *
- * Kidney is a utility providing static classes to convert a
+ *Kidney is a utility providing static classes to convert a
  * PGP KeyID, or a fingerprint, to a string and back again.
  *
  * Additionally, it produces and expects strings which have colons, spaces or dashes at every

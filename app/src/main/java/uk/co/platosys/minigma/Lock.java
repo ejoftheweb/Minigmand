@@ -46,6 +46,8 @@ import org.spongycastle.openpgp.operator.PBESecretKeyDecryptor;
 import org.spongycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.spongycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.spongycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
+import org.spongycastle.util.Arrays;
+
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.exceptions.SignatureException;
@@ -72,12 +74,14 @@ import uk.co.platosys.minigma.utils.MinigmaUtils;
  *
  * A Lock object is normally instantiated by obtaining it from a LockStore.
  *
- * Note that the lockID and the fingerprint are the SAME thing - the fingerprint is an
- * object wrapper for the byte array that is the lockID.
+ * LockIDs are 64-bit longs  but are not guaranteed to be unique. Neither, for that matter, are Fingerprints,
+ * which are 160-bit numbers, but probabilistically they are. Better to use Fingerprints to identify Locks rather than
+ * LockIDs, but sometimes the LockID is cool.
  *
  * @author edward
  *
- *
+ * Many Minigma methods, including several in the Lock class, are overloaded so that they can take either
+ * a String, a BigBinary or a byte[] argument.
  */
 public class Lock {
 
@@ -85,7 +89,7 @@ public class Lock {
     private static String TAG = "Lock";
     private KeyFingerPrintCalculator calculator;
     //public static final String MULTIPLE_LOCK="multiple lock";
-    private byte[] lockID;
+    private long lockID;
     private Fingerprint fingerprint;
     private PGPPublicKey publicKey;
     private String userID;
@@ -108,9 +112,9 @@ public class Lock {
             this.publicKeyRingCollection = new PGPPublicKeyRingCollection(bis, keyFingerPrintCalculator);
             PGPPublicKeyRing keyRing = (PGPPublicKeyRing) publicKeyRingCollection.getKeyRings().next();
             this.publicKey = keyRing.getPublicKey();
-            this.lockID=publicKey.getFingerprint();
+            this.lockID=publicKey.getKeyID();
             this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
-            this.fingerprint=new Fingerprint(lockID);
+            this.fingerprint=new Fingerprint(publicKey.getFingerprint());
 
         }catch(Exception x){
             throw new MinigmaException("error initialising minigma-lock from string", x);
@@ -149,14 +153,14 @@ public class Lock {
             this.publicKey=pubkey;
             Iterator<String> userids = pubkey.getUserIDs();
 
-            this.lockID=publicKey.getFingerprint();
-            this.fingerprint=new Fingerprint(lockID);
+            this.lockID=publicKey.getKeyID();
+            this.fingerprint=new Fingerprint(publicKey.getFingerprint());
             this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
 
             //System.out.println(Kidney.toString(lockID));
             //System.out.println(Kidney.toString(fingerprint));
         }catch(Exception x){
-            Exceptions.dump(x);
+            Exceptions.dump("Lock-init", x);
 
         }
     }
@@ -169,15 +173,15 @@ public class Lock {
             keyList.add(pgpPublicKeyRing);
             this.publicKeyRingCollection = new PGPPublicKeyRingCollection(keyList);
         }catch (Exception x){
-            Exceptions.dump(x);
+            Exceptions.dump("Lock+PKR", x);
         }
         PGPPublicKey pubkey = pgpPublicKeyRing.getPublicKey();
         this.publicKey=pubkey;
-        this.lockID=publicKey.getFingerprint();
-        this.fingerprint=new Fingerprint(lockID);
-        Log.d(TAG, "fingerprint is "+Kidney.toString(fingerprint.getFingerprintbytes()));
+        this.lockID=publicKey.getKeyID();
+        this.fingerprint=new Fingerprint(publicKey.getFingerprint());
+        //Log.d(TAG, "fingerprint is "+Kidney.toString(fingerprint.getFingerprintbytes()));
         this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
-        Log.d(TAG, "lock created with shortID "+shortID);
+        //Log.d(TAG, "lock created with shortID "+shortID);
 
     }
 
@@ -319,7 +323,7 @@ public class Lock {
      * @param passphrase and the passphrase
      * @return
      */
-    public Certificate revokeLock (long keyID, Key key, char[] passphrase){
+    public Certificate revokeLock (long keyID, Key key, char[] passphrase) throws MinigmaException{
         try {
             PGPPublicKeyRing pgpPublicKeyRing = publicKeyRingCollection.getPublicKeyRing(keyID);
             PGPPublicKey pgpPublicKey = pgpPublicKeyRing.getPublicKey(keyID);
@@ -332,12 +336,13 @@ public class Lock {
     }
     /**Revokes a particular public key in a Lock, generating a key revocation Certificate
      *
-     * @param keyID the 160-bit fingerprint of the public key to be revoked
+     * @param fingerprint The fingerprint of the public key to be revoked
      * @param key
      * @param passphrase
      * @return
      */
-    public Certificate revokeLock (byte[] keyID, Key key, char[] passphrase){
+    public Certificate revokeLock (Fingerprint fingerprint, Key key, char[] passphrase) throws MinigmaException{
+        byte[] keyID = fingerprint.getFingerprintbytes();
         try {
             PGPPublicKeyRing pgpPublicKeyRing = publicKeyRingCollection.getPublicKeyRing(keyID);
             PGPPublicKey pgpPublicKey = pgpPublicKeyRing.getPublicKey(keyID);
@@ -347,14 +352,14 @@ public class Lock {
             return null;
         }
     }
-    private Certificate revokeLock (PGPPublicKey pgpPublicKey, Key key, char[] passphrase){
+    private Certificate revokeLock (PGPPublicKey pgpPublicKey, Key key, char[] passphrase) throws MinigmaException{
         try{
             PGPSignatureGenerator pgpSignatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(pgpPublicKey.getAlgorithm(), HashAlgorithmTags.SHA512));
             PBESecretKeyDecryptor pbeSecretKeyDecryptor = new JcePBESecretKeyDecryptorBuilder().build(passphrase);
             PGPPrivateKey pgpPrivateKey = key.getSigningKey().extractPrivateKey(pbeSecretKeyDecryptor);
             pgpSignatureGenerator.init(0x20, pgpPrivateKey);
             PGPSignature revocationSignature = pgpSignatureGenerator.generateCertification(pgpPublicKey);
-            pgpPublicKey = PGPPublicKey.addCertification(pgpPublicKey,revocationSignature);
+            publicKey = PGPPublicKey.addCertification(pgpPublicKey,revocationSignature);
             return new Certificate(revocationSignature);
         }catch(PGPException pgpex){
             Exceptions.dump(pgpex);
@@ -437,21 +442,26 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
 }
  */
     /**
-     *Certifies a specific PGP public key within this Lock.
-     *
+     *Certifies a specific PGP public subkey within this Lock.
+     * (e.g. master, encryption, subkey)
      * @param keyID the keyID of the public key to be certified
      * @param key the key of the person doing the certifying
      * @param passphrase the corresponding passphrase
+     * @param certificationLevel the level of certification - basic to positive?
      * @throws MinigmaException
      */
-    public Certificate certify(long keyID, Key key, char [] passphrase, LockStore lockStore) throws MinigmaException {
+    public Certificate certify(long keyID, Key key, char [] passphrase, LockStore lockStore, int certificationLevel) throws MinigmaException {
+        if (!(Arrays.contains(Certificate.CERTIFICATION_TYPES, certificationLevel))){
+            throw new MinigmaException(certificationLevel+ "is not a valid certification type");
+        }
         try{
             if(publicKeyRingCollection.contains(keyID)){
                 try{
                     PGPPublicKeyRing pgpPublicKeyRing = publicKeyRingCollection.getPublicKeyRing(keyID);
-                    PGPPublicKey publicKey = pgpPublicKeyRing.getPublicKey(keyID);
+                    PGPPublicKey pgpPublicKey = pgpPublicKeyRing.getPublicKey(keyID);
                     boolean isCertified = false;
-                    Iterator signatures = publicKey.getSignatures();
+                    Iterator signatures = pgpPublicKey.getSignatures();
+                    //first check to see if it is already certified by this key, no point in duplicating the effort
                     while(signatures.hasNext()){
                         PGPSignature signature = (PGPSignature) signatures.next();
                         if(signature.isCertification()){
@@ -460,14 +470,16 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         }
                     }
                     if(! isCertified) {
-                        PGPSignature pgpSignature = SignatureEngine.getKeyCertification(key, passphrase, publicKey);
+                        Certificate certificate = SignatureEngine.getKeyCertification(key, passphrase, publicKey, certificationLevel);
+                        //Now to add the certification to the PGPpublic key itself.
+                        PGPSignature pgpSignature = certificate.getPgpSignature();
                         publicKeyRingCollection = PGPPublicKeyRingCollection.removePublicKeyRing(publicKeyRingCollection, pgpPublicKeyRing);
                         pgpPublicKeyRing = PGPPublicKeyRing.removePublicKey(pgpPublicKeyRing, publicKey);
                         publicKey = PGPPublicKey.addCertification(publicKey, pgpSignature);
                         pgpPublicKeyRing = PGPPublicKeyRing.insertPublicKey(pgpPublicKeyRing, publicKey);
                         publicKeyRingCollection = PGPPublicKeyRingCollection.addPublicKeyRing(publicKeyRingCollection, pgpPublicKeyRing);
                         lockStore.addLock(this);
-                        return new Certificate(pgpSignature);
+                        return certificate;
                     }
                 }catch(Exception x){
                     throw new MinigmaException("Problem certifying key", x);
@@ -482,7 +494,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
         }
         return null;
     }
-    public List<Certificate> getCertificates(LockStore lockStore){
+    public List<Certificate> getCertificates(LockStore lockStore) throws MinigmaException{
         List<Certificate> certificates = new ArrayList<>();
         for (PGPPublicKeyRing pgpPublicKeyRing : publicKeyRingCollection){
             Iterator<PGPPublicKey> pgpPublicKeyIterator = pgpPublicKeyRing.getPublicKeys();
@@ -531,7 +543,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
      *
      * @return
      */
-    public byte[] getLockID(){
+    public long getLockID(){
         return lockID;
     }
     public Fingerprint getFingerprint(){

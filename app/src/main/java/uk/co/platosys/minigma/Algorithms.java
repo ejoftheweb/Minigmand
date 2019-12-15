@@ -23,6 +23,7 @@ import org.spongycastle.openpgp.PGPEncryptedData;
 
 import java.math.BigInteger;
 
+/** Constants referring to the various algorithms used **/
 public class Algorithms {
 
     public static final int RSA = 4;
