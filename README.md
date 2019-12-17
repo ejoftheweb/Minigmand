@@ -1,7 +1,6 @@
 # Minigmand
 Minigmand is an implementation of Minigma for the Android platform. It replaces the BouncyCastle packages with the equivalent 
-SpongyCastle ones (because of a naming conflict in Android). And some other tweaks to make it work, such as using Android's own
-Base64 implementation for encoding/decoding.
+SpongyCastle ones (because of a naming conflict in Android). 
 
 To use it, just put this in the repositories section of your gradle.build file:\n
 maven { url "https://jitpack.io" } 
