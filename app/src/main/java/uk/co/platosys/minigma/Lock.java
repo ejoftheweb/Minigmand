@@ -92,7 +92,7 @@ public class Lock {
     private long lockID;
     private Fingerprint fingerprint;
     private PGPPublicKey publicKey;
-    private String userID;
+    private List<String> userIDs = new ArrayList<>();
     private String shortID;
 
 
@@ -153,6 +153,9 @@ public class Lock {
                 PGPPublicKey pubkey = keyRing.getPublicKey();
                 this.publicKey = pubkey;
                 Iterator<String> userids = pubkey.getUserIDs();
+                while (userids.hasNext()){
+                    userIDs.add(userids.next());
+                }
 
                 this.lockID = publicKey.getKeyID();
                 this.fingerprint = new Fingerprint(publicKey.getFingerprint());
@@ -560,8 +563,22 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
             return null;
         }
     }
+
+    /**
+     * Returns the first userID associated with this Lock. Note that Locks, like PGPPublicKeys, can
+     * have multiple userIDs associated with them.
+     * @return
+     */
     public String getUserID(){
-        return userID;
+        return userIDs.get(0);
+    }
+
+    /**
+     * Returns a List of all the text userIDs associated with this Lock.
+     * @return
+     */
+    public List<String> getUserIDs(){
+        return userIDs;
     }
 
     /**

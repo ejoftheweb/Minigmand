@@ -27,7 +27,17 @@ public class CertificationTest {
     public  void setup(){
         try {
             if (lockstore==null){lockstore=new MinigmaLockStore(TestValues.lockFile, true);}
+            if(lockstore.contains(TestValues.testUsernames[0])){
 
+            }else{
+                File keyFile = TestValues.keyDirectory;
+                if (!keyFile.exists()) {
+                    keyFile.mkdirs();
+                    for (int i = 0; i < TestValues.testUsernames.length; i++) {
+                        LockSmith.createLockset(TestValues.keyDirectory, lockstore, TestValues.testUsernames[i], TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                    }
+                }
+            }
         }catch(Exception x){
             Exceptions.dump("CTSCSetup", x);
         }
@@ -35,6 +45,9 @@ public class CertificationTest {
     @Test
     public void selfCertificationTest(){
         System.out.println("Running Single Certification Test");
+        boolean masterselfsigned=false;
+        boolean encryptselfsigned=false;
+        boolean signselfsigned=false;
         try {
             Lock lock = lockstore.getLock(username);
             Iterator<PGPPublicKeyRing> publicKeyRingIterator = lock.getPGPPublicKeyRingIterator();
@@ -45,39 +58,40 @@ public class CertificationTest {
                     PGPPublicKey pgpPublicKey = publicKeyIterator.next();
                     String sfprint = Fingerprint.getTestFingerprint(pgpPublicKey, 2);
                     if (pgpPublicKey.isMasterKey()){
-                        System.out.println("Bkey "+sfprint+" is master Bkey");
                         Iterator iterator = pgpPublicKey.getSignatures();
                         while (iterator.hasNext()){
                             PGPSignature pgpSignature = (PGPSignature) iterator.next();
-                            System.out.println(lock.getFingerprint().getKeyID()+" "+pgpSignature.getKeyID());
-
+                            if (pgpSignature.getKeyID()==lock.getLockID()){
+                                masterselfsigned=true;
+                            }
                         }
-                        System.out.println("finished master key");
+
                     }else if (pgpPublicKey.isEncryptionKey()){
-                        System.out.println("Bkey "+sfprint+" is encryption Bkey");
                         Iterator iterator = pgpPublicKey.getSignatures();
                         while (iterator.hasNext()){
                             PGPSignature pgpSignature = (PGPSignature) iterator.next();
-                            System.out.println(lock.getFingerprint().getKeyID()+" "+pgpSignature.getKeyID());
-
+                            if (pgpSignature.getKeyID()==lock.getLockID()){
+                                encryptselfsigned=true;
+                            }
                         }
-                        System.out.println("finished encryption key");
-                    }else {
-                        System.out.println("Bkey "+sfprint+" is signing Bkey");
+
+                    }else{
+
                         Iterator iterator = pgpPublicKey.getSignatures();
                         while (iterator.hasNext()){
                             PGPSignature pgpSignature = (PGPSignature) iterator.next();
-                            System.out.println(lock.getFingerprint().getKeyID()+" "+pgpSignature.getKeyID());
+                            if (pgpSignature.getKeyID()==lock.getLockID()){
+                                signselfsigned=true;
+                            }
 
                         }
                     }
-                    //Certificate certificate = lock.certify(pgpPublicKey.getKeyID(), key, passphrase,lockstore,Certificate.DEFAULT);
 
-                    // keycount++;
                 }
                 //System.out.println("keycount: "+keycount);
                 //ringcount++;
             }
+            assertTrue(masterselfsigned&&encryptselfsigned&&signselfsigned);
         }catch (Exception x){
             Exceptions.dump("SCT", x);
         }
