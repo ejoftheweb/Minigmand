@@ -148,15 +148,18 @@ public class Lock {
     private void init(PGPPublicKeyRingCollection publicKeyRingCollection){
         try {
             this.publicKeyRingCollection = publicKeyRingCollection;
-            PGPPublicKeyRing keyRing = (PGPPublicKeyRing) publicKeyRingCollection.getKeyRings().next();
-            PGPPublicKey pubkey = keyRing.getPublicKey();
-            this.publicKey=pubkey;
-            Iterator<String> userids = pubkey.getUserIDs();
+            if(publicKeyRingCollection.getKeyRings().hasNext()) {
+                PGPPublicKeyRing keyRing = (PGPPublicKeyRing) publicKeyRingCollection.getKeyRings().next();
+                PGPPublicKey pubkey = keyRing.getPublicKey();
+                this.publicKey = pubkey;
+                Iterator<String> userids = pubkey.getUserIDs();
 
-            this.lockID=publicKey.getKeyID();
-            this.fingerprint=new Fingerprint(publicKey.getFingerprint());
-            this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
-
+                this.lockID = publicKey.getKeyID();
+                this.fingerprint = new Fingerprint(publicKey.getFingerprint());
+                this.shortID = MinigmaUtils.encode(publicKey.getKeyID());
+            }else{
+                System.out.println("no lock exists");
+            }
             //System.out.println(Kidney.toString(lockID));
             //System.out.println(Kidney.toString(fingerprint));
         }catch(Exception x){
@@ -465,7 +468,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                     while(signatures.hasNext()){
                         PGPSignature signature = (PGPSignature) signatures.next();
                         if(signature.isCertification()){
-                            isCertified=(signature.getKeyID()==key.getLongKeyID());
+                            isCertified=(signature.getKeyID()==key.getKeyID());
                             if(isCertified){return new Certificate(signature);}
                         }
                     }

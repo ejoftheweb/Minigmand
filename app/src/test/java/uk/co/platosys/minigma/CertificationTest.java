@@ -52,6 +52,7 @@ public class CertificationTest {
                             System.out.println(lock.getFingerprint().getKeyID()+" "+pgpSignature.getKeyID());
 
                         }
+                        System.out.println("finished master key");
                     }else if (pgpPublicKey.isEncryptionKey()){
                         System.out.println("Bkey "+sfprint+" is encryption Bkey");
                         Iterator iterator = pgpPublicKey.getSignatures();
@@ -60,6 +61,7 @@ public class CertificationTest {
                             System.out.println(lock.getFingerprint().getKeyID()+" "+pgpSignature.getKeyID());
 
                         }
+                        System.out.println("finished encryption key");
                     }else {
                         System.out.println("Bkey "+sfprint+" is signing Bkey");
                         Iterator iterator = pgpPublicKey.getSignatures();

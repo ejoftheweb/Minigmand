@@ -66,7 +66,7 @@ public class Key {
     private PGPSecretKey signingKey;
     private PGPSecretKey masterKey;
     private PGPSecretKeyRingCollection secretKeyRingCollection;
-    private byte[] keyID;
+    private Fingerprint fingerprint;
     private String userID="";
 
 
@@ -151,9 +151,9 @@ public class Key {
                     PGPSecretKey key = keyIterator.next();
                     if (key.isSigningKey()){
                         signingKey = key;
-                        keyID = signingKey.getPublicKey().getFingerprint();
+                        fingerprint = new Fingerprint(signingKey.getPublicKey().getFingerprint());
                         if(lockStore!=null){
-                            this.userID=lockStore.getUserID(keyID);
+                            this.userID=lockStore.getUserID(fingerprint);
                         }
                     }else if (key.isMasterKey()){
                         masterKey=key;
@@ -168,9 +168,9 @@ public class Key {
         }
     }
     /** @return the keyID for this key;*/
-    public byte[] getKeyID(){return keyID;}
-    public long getLongKeyID(){
-        Fingerprint fingerprint = new Fingerprint(keyID);
+    public Fingerprint getFingerprint(){return fingerprint;}
+    public long getKeyID(){
+
         return fingerprint.getKeyID();
     }
     /** @return the primary userID associated with this key;
