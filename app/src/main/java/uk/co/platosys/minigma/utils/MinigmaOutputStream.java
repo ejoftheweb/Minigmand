@@ -24,6 +24,10 @@ import uk.co.platosys.minigma.Minigma;
 
 import java.io.OutputStream;
 
+/**MinigmaOutputStream is a PGP ArmoredOutputStream in which the headers identify Minigma
+ * as the user agent
+ *
+ */
 public class MinigmaOutputStream extends ArmoredOutputStream {
     public MinigmaOutputStream (OutputStream outputStream){
         super(outputStream);

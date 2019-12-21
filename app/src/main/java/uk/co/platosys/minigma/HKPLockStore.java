@@ -104,16 +104,17 @@ private String TAG = "HKPLockstore";
 
     /** This method always returns false. It is not practicable (or for that matter usually ever desirable) to remove a public key from
      * a public keyserver.
-     * @param lockID
+     * @param fingerprint
      * @return always false*/
     @Override
-    public boolean removeLock(byte[] lockID) {
+    public boolean removeLock(Fingerprint fingerprint) {
         return false;
     }
 
     /**This method retrieves a Lock from the server given its keyID/fingerprint*/
     @Override
-    public Lock getLock(byte[] keyID) {
+    public Lock getLock(Fingerprint fingerprint) {
+        byte[] keyID = fingerprint.getFingerprintbytes();
 
         try {
             URL url = new URL(PROTOCOL, host, port, GET_FILE_PART);
@@ -214,7 +215,7 @@ private String TAG = "HKPLockstore";
     }
 
     @Override
-    public String getUserID(byte[] keyID) {
+    public String getUserID(Fingerprint fingerprint) {
         return null;
     }
 

@@ -67,21 +67,25 @@ import uk.co.platosys.minigma.utils.FileTools;
 import uk.co.platosys.minigma.utils.MinigmaOutputStream;
 
 /**
- * @author edward
- * This is a key-pair generator - it has one method which generates a pair of keys and writes them to file.
- * Note that in fact it generates three key pairs: a master key pair, which is used for certification, with
+ * Key-pair - Lock&Key Pair generator
+ * This is a key-pair generator - it has one static method which generates a Lock and a corresponding Key.
+ * The (public) Lock is stored in the LockStore provided as an argument, and the private Key as a File in the
+ * directory provided as a File argument.
+ * Under the skin, in line with OpenPGP it generates three key pairs: a master key pair, which is used for certification, with
  * two subkeys, one for encryption, and one for signatures.
  * But they have the same passphrase.
+ *
+ *
  */
 
 public class LockSmith {
-    private static String PROVIDER="BC";
+    private static String PROVIDER="SC";
 
 
 
     /**
-     *
-     * @param keyDirectory the directory in which the private key is to be saved. This could be on a removable drive.
+     * Generat a Lock & Key pair.
+     * @param keyDirectory the directory in which the private Key is to be saved. This could be on a removable drive.
      * @param lockStore the LockStore in which the Lock(the public key) generated is to be stored.
      * @param userName
      * @param passPhrase

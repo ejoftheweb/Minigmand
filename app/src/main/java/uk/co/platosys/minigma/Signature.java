@@ -11,6 +11,7 @@ import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 import java.io.*;
+import java.text.ParseException;
 
 /**
  * The Signature object  wraps a BouncyCastle PGPSignature object.
@@ -28,7 +29,7 @@ public  final class Signature extends BaseSignature {
     protected Signature (PGPSignature pgpSignature){
         super(pgpSignature);
     }
-    public Signature (String string){
+    public Signature (String string) throws ParseException {
         super(string);
     }
     public Signature (InputStream inputStream, String shortDigest){

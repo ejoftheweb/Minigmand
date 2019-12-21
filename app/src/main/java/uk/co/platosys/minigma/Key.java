@@ -66,7 +66,7 @@ public class Key {
     private PGPSecretKey signingKey;
     private PGPSecretKey masterKey;
     private PGPSecretKeyRingCollection secretKeyRingCollection;
-    private byte[] keyID;
+    private Fingerprint fingerprint;
     private String userID="";
 
 
@@ -151,9 +151,9 @@ public class Key {
                     PGPSecretKey key = keyIterator.next();
                     if (key.isSigningKey()){
                         signingKey = key;
-                        keyID = signingKey.getPublicKey().getFingerprint();
+                        fingerprint = new Fingerprint(signingKey.getPublicKey().getFingerprint());
                         if(lockStore!=null){
-                            this.userID=lockStore.getUserID(keyID);
+                            this.userID=lockStore.getUserID(fingerprint);
                         }
                     }else if (key.isMasterKey()){
                         masterKey=key;
@@ -168,9 +168,9 @@ public class Key {
         }
     }
     /** @return the keyID for this key;*/
-    public byte[] getKeyID(){return keyID;}
-    public long getLongKeyID(){
-        Fingerprint fingerprint = new Fingerprint(keyID);
+    public Fingerprint getFingerprint(){return fingerprint;}
+    public long getKeyID(){
+
         return fingerprint.getKeyID();
     }
     /** @return the primary userID associated with this key;
@@ -207,48 +207,64 @@ public class Key {
     }
 
     /**
-     * @param toBeSigned the String to be signed
+     * @param toBeSigned the binary data to be signed in the form of a byte array
      * @param passphrase
-     * @return a Base64-encoded signature String.
+     * @return a Signature object
      * @throws MinigmaException
      */
     public Signature sign(byte[]  toBeSigned, char[] passphrase) throws MinigmaException{
-        String digest= Digester.digest(toBeSigned);
+        BigBinary digest= Digester.digest(toBeSigned);
+        return SignatureEngine.sign(digest, this, passphrase);
+    }
+
+    /**
+     * @param toBeSigned the BigBinary to be signed
+     * @param passphrase
+     * @return a Signature object
+     * @throws MinigmaException
+     */
+    public Signature sign(BigBinary  toBeSigned, char[] passphrase) throws MinigmaException{
+        BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, passphrase);
     }
 
     /**
      * @param toBeSigned the String to be signed
      * @param passphrase
-     * @return a Base64-encoded signature String.
+     * @return a Signature object.
      * @throws MinigmaException
      */
     public Signature sign(String toBeSigned, char[] passphrase) throws MinigmaException{
-        String digest= Digester.digest(toBeSigned);
+        BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, passphrase);
     }
+
     /**
      * @param toBeSigned the String to be signed
      * @param passphrase
-     * @return a Base64-encoded signature String.
+     * @param notations a List of Notation objects to be included in this signature (as PGPNotationData)
+     * @return a Signature object
      * @throws MinigmaException
      */
     public Signature sign(byte[] toBeSigned, List<Notation> notations, char[] passphrase) throws MinigmaException{
-        String digest= Digester.digest(toBeSigned);
+        BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, notations, passphrase);
     }
+
     /**
      * @param toBeSigned the String to be signed
      * @param passphrase
-     * @return a Base64-encoded signature String.
+     * @param notations a List of Notation objects to be included in this signature (as PGPNotationData)
+     * @return a Signature object.
      * @throws MinigmaException
      */
     public Signature sign(String toBeSigned, List<Notation> notations, char[] passphrase) throws MinigmaException{
-        String digest= Digester.digest(toBeSigned);
+        BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, notations, passphrase);
     }
+
     /**
-     * This takes ciphertext and returns  the cleartext
+     * This takes ciphertext and returns the cleartext. The ciphertext is actually Base64-encoded binary data.
      *
      * @param ciphertext to be unlocked
      * @param passphrase This key's passphrase
@@ -266,6 +282,9 @@ public class Key {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         return CryptoEngine.decrypt(bais, this, passphrase);
 
+    }
+    public BigBinary unlock(BigBinary cipherbytes, char[] passphrase) throws Exception {
+        return new BigBinary(unlockAsBytes(cipherbytes.toByteArray(),passphrase));
     }
 
 }

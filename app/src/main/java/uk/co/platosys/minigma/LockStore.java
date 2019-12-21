@@ -18,6 +18,7 @@ package uk.co.platosys.minigma;
         * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
         * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
         * SOFTWARE.*/
+import uk.co.platosys.minigma.exceptions.LockNotFoundException;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
 
 import java.util.Iterator;
@@ -43,19 +44,27 @@ public interface LockStore {
      */
     boolean addLock(Lock lock);
 
-    boolean removeLock(byte[] lockID);
+    boolean removeLock(Fingerprint fingerprint);
 
-    Lock getLock(byte[] keyID);
+    Lock getLock(Fingerprint fingerprint);
 
     Iterator<Lock> iterator() throws MinigmaException;
 
-    Lock getLock(String userID)throws MinigmaException;
+    /**
+     * This method is used to retrieve a Lock from a Lockstore given a userID - typically an email
+     * address, but any String identifier can be used.
+     * @param userID
+     * @return a Lock associated with this userID.
+     * @throws MinigmaException
+     * @throws LockNotFoundException if there is no Lock in the Lockstore having this userID.
+     */
+    Lock getLock(String userID)throws MinigmaException, LockNotFoundException;
 
     boolean contains(String userID);
 
     long getStoreId();
 
-    String getUserID(byte[] keyID);
+    String getUserID(Fingerprint keyID);
     String getUserID(long keyID);
 
     int getCount();//returns the number of keys held by  this Lockstore

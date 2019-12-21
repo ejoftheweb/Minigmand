@@ -40,6 +40,7 @@ import uk.co.platosys.minigma.Lock;
 import uk.co.platosys.minigma.LockStore;
 
 /**
+ * Utility class with static methods for encrypting (locking)  and decrypting (unlocking)
  * @author edward
 
  */
@@ -53,7 +54,7 @@ public class Minigma {
     public static final Provider PROVIDER = initialiseProvider();
     public static final String LOCK_DIRNAME="lock";
     public static final String KEY_DIRNAME="key";
-    public static final String VERSION="v0.1.8.3";
+    public static final String VERSION="v0.2.0.1";
 
     /**
      * This takes an String and encrypts it with the given Lock

@@ -20,7 +20,7 @@ package uk.co.platosys.minigma.utils;
         * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
         * SOFTWARE.*/
 
-import android.util.Base64;
+//import android.util.Base64;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -29,20 +29,33 @@ import java.nio.charset.Charset;
 
 import java.util.Date;
 
+
+
 import org.spongycastle.bcpg.ArmoredInputStream;
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.openpgp.PGPCompressedDataGenerator;
 import org.spongycastle.openpgp.PGPLiteralData;
 import org.spongycastle.openpgp.PGPLiteralDataGenerator;
-
+import org.spongycastle.util.Strings;
+import org.spongycastle.util.encoders.UrlBase64;
+import org.spongycastle.util.encoders.Base64;
 import org.spongycastle.openpgp.PGPUtil;
 import org.spongycastle.openpgp.bc.BcPGPObjectFactory;
 import org.spongycastle.openpgp.jcajce.JcaPGPObjectFactory;
 
 import uk.co.platosys.minigma.Minigma;
 
-/**A general utility class to encode/decode bytes to Base64. Because of the different implementations,
- * this class is slightly different in Minigmand.
+
+/**A general utility class to encode/decode bytes to Base64.
+ *
+ * This class has been refactored to use the BouncyCastle Base64 encoders, removing the dependency on
+ * either the java or Android ones.
+ *
+ * Note that by default, the encode/decode methods use standard Base64 encoding using Table 1 of RFC 4648.
+ * This includes characters that are unsafe to use in URLs and some filenames. If you want to use Table 2, urlsafe,
+ * use the methods that take a urlsafe boolean argument.  This behaviour may change in later releases,
+ * to defend against which it probably makes sense always to specify whether to use urlsafe encoding or not.
+ *
  */
 
 
@@ -54,13 +67,13 @@ public class MinigmaUtils {
 
     /** turns a byte array into a Base-64 encoded string using standard (Table 1 of RFC 4648) encoding **/
     public static String encode(byte[] bytes){
-        return Base64.encodeToString(bytes, 0,0,Base64.DEFAULT);
+        return Base64.toBase64String(bytes);
     }
     /** turns a byte array into a Base-64 encoded string; if urlsafe is true, uses Table 2 of RFC 4648,
      * otherwise it uses Table 1.  **/
     public static String encode(byte[] bytes, boolean urlsafe){
         if (urlsafe) {
-            return Base64. encodeToString(bytes, 0,0,Base64.URL_SAFE);
+            return Strings.fromByteArray(UrlBase64.encode(bytes));
         }else{
             return encode(bytes);
         }
@@ -74,7 +87,13 @@ public class MinigmaUtils {
     }
     /** turns a base-64 encoded string into a byte array */
     public static byte[] decode(String string){
-        return Base64.decode(string, Base64.DEFAULT);
+        return Base64.decode(string);
+    }
+    /** turns a URL-safe base-64 encoded string into a byte array */
+    public static byte[] decode(String string, boolean urlsafe){
+        if(urlsafe){
+            return UrlBase64.decode(string);
+        }else return decode(string);
     }
     /**converts an ordinary String  into an array of bytes**/
     public static byte[] toByteArray(String string){

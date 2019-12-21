@@ -48,14 +48,17 @@ import org.spongycastle.openpgp.operator.KeyFingerPrintCalculator;
 import org.spongycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 
 import uk.co.platosys.minigma.exceptions.Exceptions;
+import uk.co.platosys.minigma.exceptions.LockNotFoundException;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.utils.MinigmaOutputStream;
 
 
 /**
- * @author edward
  * The MinigmaLockStore implements the LockStore interface using  OpenPGP public keyrrings as the storage
- * medium. The file it creates is an OpenPGP public keyrring and can be read by other OpenPGP compliant software
+ *  medium. The file it creates is a text file containing an Ascii-Armored OpenPGP public keyrring
+ *  which can be read by other OpenPGP compliant software
+ *  *
+ * @author edward
  *
  *
  */
@@ -75,12 +78,13 @@ public class MinigmaLockStore implements LockStore {
      * @throws MinigmaException
      */
     public MinigmaLockStore(File file, boolean create) throws MinigmaException{
+        System.out.println("creating lockstore in "+file.getName()+" create="+Boolean.toString(create));
         this.file=file;
         if (file.exists()&&file.canRead()){
             if (!load()){
                 throw new MinigmaException("LockStore-init failed at loading");
             }else{
-                //System.out.println("MLS-loaded:"+count);
+                System.out.println("MLS-loaded:"+count);
             }
         }else{
             if(create){
@@ -88,7 +92,10 @@ public class MinigmaLockStore implements LockStore {
                 try {
                     this.pgpPublicKeyRingCollection = new PGPPublicKeyRingCollection(ringCollection);
                     save();
-                }catch (Exception x){}
+                    System.out.println("new lockstore created with filename "+file.getName());
+                }catch (Exception x){
+                    Exceptions.dump("problem creating new MinigmaLockStore file ",x);
+                }
             }else{
                 throw new MinigmaException( "LockStore-init: file doesn't exist");
             }
@@ -145,9 +152,10 @@ public class MinigmaLockStore implements LockStore {
             if (pgpPublicKeyRingCollection==null){
                 load();
             }
-            byte[] lockID = lock.getLockID();
+            Fingerprint fingerprint = lock.getFingerprint();
+            byte[] lockID =fingerprint.getFingerprintbytes();
             if (pgpPublicKeyRingCollection.contains(lockID)){
-                removeLock(lockID);
+                removeLock(fingerprint);
             }
             Iterator<PGPPublicKeyRing> it = lock.getPGPPublicKeyRingIterator();
             while (it.hasNext()){
@@ -162,10 +170,11 @@ public class MinigmaLockStore implements LockStore {
     }
 
     @Override
-    public boolean removeLock(byte[] lockID) {
+    public boolean removeLock(Fingerprint fingerprint) {
+        byte[] lockID = fingerprint.getFingerprintbytes();
         try{
             if (pgpPublicKeyRingCollection.contains(lockID)){
-                Lock oldLock = getLock(lockID);
+                Lock oldLock = getLock(fingerprint);
                 Iterator<PGPPublicKeyRing> pgpPublicKeyRingIterator = oldLock.getPGPPublicKeyRingIterator();
                 while(pgpPublicKeyRingIterator.hasNext()){
                     PGPPublicKeyRing pgpPublicKeyRing = pgpPublicKeyRingIterator.next();
@@ -179,16 +188,21 @@ public class MinigmaLockStore implements LockStore {
         }
     }
 
-    /** @param keyID
-     * @return a lock with this keyID */
+    /** @param fingerprint
+     * @return a lock with this fingerprint or null if it doesn't exist in the Lockstore*/
     @Override
-    public Lock getLock(byte[] keyID){
+    public Lock getLock(Fingerprint fingerprint){
+        byte[] keyID = fingerprint.getFingerprintbytes();
         try{
-            PGPPublicKeyRing keyRing = pgpPublicKeyRingCollection.getPublicKeyRing(keyID);
-            Collection<PGPPublicKeyRing> collection = new ArrayList<>();
-            collection.add(keyRing);
-            PGPPublicKeyRingCollection keyRingCollection = new PGPPublicKeyRingCollection(collection);
-            return new Lock(keyRingCollection);
+            if(pgpPublicKeyRingCollection.contains(keyID)) {
+                PGPPublicKeyRing keyRing = pgpPublicKeyRingCollection.getPublicKeyRing(keyID);
+                Collection<PGPPublicKeyRing> collection = new ArrayList<>();
+                collection.add(keyRing);
+                PGPPublicKeyRingCollection keyRingCollection = new PGPPublicKeyRingCollection(collection);
+                return new Lock(keyRingCollection);
+            }else{
+                return null;
+            }
         }catch(Exception e){
             return null;
         }
@@ -209,24 +223,32 @@ public class MinigmaLockStore implements LockStore {
         }
         return list.iterator();
     }
-    /** returns */
+    /**
+     * returns
+     *
+     *
+     * */
     @Override
-    public Lock getLock(String userID)throws MinigmaException{
-        try{
-            PGPPublicKeyRingCollection keyRingCollection=null;
+    public Lock getLock(String userID)throws MinigmaException, LockNotFoundException {
+        try {
+            PGPPublicKeyRingCollection keyRingCollection = null;
             Iterator<PGPPublicKeyRing> itr = pgpPublicKeyRingCollection.getKeyRings(userID, true);
-            while(itr.hasNext() ){
-                PGPPublicKeyRing publicKeyRing=itr.next();
-                if (keyRingCollection==null){
+            while (itr.hasNext()) {
+                PGPPublicKeyRing publicKeyRing = itr.next();
+                if (keyRingCollection == null) {
                     Collection<PGPPublicKeyRing> collection = new ArrayList<>();
                     collection.add(publicKeyRing);
-                    keyRingCollection=new PGPPublicKeyRingCollection(collection);
-                }else{
-                    keyRingCollection=PGPPublicKeyRingCollection.addPublicKeyRing(keyRingCollection,publicKeyRing);
+                    keyRingCollection = new PGPPublicKeyRingCollection(collection);
+                } else {
+                    keyRingCollection = PGPPublicKeyRingCollection.addPublicKeyRing(keyRingCollection, publicKeyRing);
                 }
             }
-            // System.out.println("getting lock for "+userID);
+            if (keyRingCollection == null) {
+                throw new LockNotFoundException("Lock not found for UserID:" + userID);
+            }
             return new Lock(keyRingCollection);
+        }catch (LockNotFoundException lnfxe){
+            throw lnfxe;
         }catch(Exception e){
             throw new MinigmaException("error getting lock for userID "+userID, e);
         }
@@ -252,7 +274,8 @@ public class MinigmaLockStore implements LockStore {
     }
 
     @Override
-    public String getUserID(byte[] keyID) {
+    public String getUserID(Fingerprint fingerprint) {
+        byte[] keyID = fingerprint.getFingerprintbytes();
         try {
             PGPPublicKeyRing publicKeyRing = pgpPublicKeyRingCollection.getPublicKeyRing(keyID);
             PGPPublicKey pgpPublicKey = publicKeyRing.getPublicKey(keyID);

@@ -49,30 +49,40 @@ import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 
 /**
- * a class with static methods for digesting elements, documents and
+ * a class with static methods for digesting Strings, BigBinaries and
  * byte arrays.
  * @author edward
  */
 public class Digester {
     private static String TAG ="Digester";
 
-    public static String digest (String string) throws MinigmaException{
+    public static BigBinary digest (String string) throws MinigmaException{
         return digest(string.getBytes(Charset.forName("UTF-8")));
     }
-    /**Takes a byte array and returns a string which is
-     * the Base64 encoded version the digest.
-     * This uses SHA3-512 as the digest algorithm.
+
+    /**
+     * Returns a BigBinary digest of the supplied BigBinary.
+     * @param bigBinary
+     * @return
+     * @throws MinigmaException
+     */
+    public static BigBinary digest (BigBinary bigBinary) throws MinigmaException {
+        return digest(bigBinary.toByteArray());
+    }
+    /**Takes a byte array and returns a BigBinary. Uses SHA3-256 as the digest
+     * algorithm
      *
      * */
-    public static String digest (byte[] bytes) throws MinigmaException{
+
+    public static BigBinary digest (byte[] bytes) throws MinigmaException{
         try{
-            KeccakDigest digest = new SHA3Digest(512);
+            KeccakDigest digest = new SHA3Digest(256);
             for(byte byt:bytes){
                 digest.update(byt);
             }
             byte[] digested = new byte[digest.getDigestSize()];
             digest.doFinal(digested, 0);
-            return(MinigmaUtils.encode(digested));
+            return new BigBinary(digested);
         }catch(Exception e){
             throw new MinigmaException("error making digest", e);
         }

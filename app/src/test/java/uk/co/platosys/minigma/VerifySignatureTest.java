@@ -91,9 +91,10 @@ public class VerifySignatureTest {
             Exceptions.dump(e);
         }try{
             Signature rereadSignature = new Signature(signatureFile);
-            List<String> notations = rereadSignature.getNotations();
-            for(String notationName:notations){
-                String notationValue = rereadSignature.getNotationValue(notationName);
+            List<Notation> notations = rereadSignature.getNotations();
+            for(Notation notation:notations){
+                String notationName = notation.getName();
+                String notationValue = notation.getValue();
                 System.out.println(notationName + ":"+notationValue);
             }
 
