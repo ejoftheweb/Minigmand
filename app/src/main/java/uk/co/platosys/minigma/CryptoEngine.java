@@ -42,9 +42,11 @@ import org.spongycastle.openpgp.operator.jcajce.JcePublicKeyKeyEncryptionMethodG
 import uk.co.platosys.minigma.Key;
 import uk.co.platosys.minigma.Lock;
 import uk.co.platosys.minigma.Minigma;
+import uk.co.platosys.minigma.exceptions.BadPassphraseException;
 import uk.co.platosys.minigma.exceptions.DecryptionException;
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
+import uk.co.platosys.minigma.exceptions.MinigmaOtherException;
 import uk.co.platosys.minigma.exceptions.NoDecryptionKeyException;
 import uk.co.platosys.minigma.utils.Kidney;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
@@ -69,9 +71,9 @@ public  class CryptoEngine {
      */
 
     public static byte[] decrypt(InputStream inputStream, Key key, char[] passphrase)
-            throws  MinigmaException,
-            DecryptionException,
-            java.io.IOException {
+            throws MinigmaOtherException,
+            BadPassphraseException
+            {
         InputStream decoderStream;
         PGPObjectFactory pgpObjectFactory=null;
         PGPEncryptedDataList pgpEncryptedDataList = null;
@@ -86,15 +88,18 @@ public  class CryptoEngine {
                 }
                 if (object instanceof PGPEncryptedDataList) {
                     pgpEncryptedDataList = (PGPEncryptedDataList) object;
-                    return decompress(decrypt(pgpEncryptedDataList, key, passphrase));
+                    PGPCompressedData compressedData = decrypt(pgpEncryptedDataList, key, passphrase);
+                    return decompress(compressedData);
                 } else {
                     System.out.println(object.getClass().getName());
                 }
             }
             throw new MinigmaException("couldn't find encrypted data list");
-        }catch (Exception e){
+        }catch(BadPassphraseException bpe){
+            throw bpe;
+        } catch(Exception e){
             Exceptions.dump(e);
-            throw new MinigmaException("error reading encrypted data list", e);
+            throw new MinigmaOtherException("error reading encrypted data list", e);
         }
     }
 
@@ -108,28 +113,36 @@ public  class CryptoEngine {
      * @throws MinigmaException
      * @throws DecryptionException
      */
-    private static PGPCompressedData decrypt(PGPEncryptedDataList pgpEncryptedDataList, Key key, char[] passphrase) throws MinigmaException, DecryptionException {
+    private static PGPCompressedData decrypt(PGPEncryptedDataList pgpEncryptedDataList, Key key, char[] passphrase) throws MinigmaOtherException, BadPassphraseException, DecryptionException {
         PGPPrivateKey privateKey = null;
         PGPPublicKeyEncryptedData pgpPublicKeyEncryptedData = null;
         try {
             Iterator<PGPPublicKeyEncryptedData> it = pgpEncryptedDataList.getEncryptedDataObjects();
             JcePBESecretKeyDecryptorBuilder keyDecryptorBuilder = new JcePBESecretKeyDecryptorBuilder();
             keyDecryptorBuilder.setProvider(BouncyCastleProvider.PROVIDER_NAME);
-            int size  = pgpEncryptedDataList.size();
+            int size = pgpEncryptedDataList.size();
             int count = 0;
             while (it.hasNext() && privateKey == null) {
                 pgpPublicKeyEncryptedData = it.next();
                 count++;
-                System.out.println();
+                //System.out.println();
                 long keyID = pgpPublicKeyEncryptedData.getKeyID();
                 //System.out.println("EncryptedDataBlock was encrypted with keyID "+Kidney.toString(keyID));
                 try {
                     PGPSecretKey secretKey = key.getDecryptionKey(keyID);
                     if (secretKey.getKeyID() == keyID) {
-                        privateKey = key.getDecryptionKey(keyID).extractPrivateKey(keyDecryptorBuilder.build(passphrase));
-                        //System.out.println("Key match for "+Kidney.toString(keyID));
+                        try {
+                            privateKey = key.getDecryptionKey(keyID).extractPrivateKey(keyDecryptorBuilder.build(passphrase));
+                            //System.out.println("Key match for "+Kidney.toString(keyID));
+                        } catch (PGPException pgpException) {
+                            throw new BadPassphraseException("bad passphrase", pgpException);
+
+                        }
                     }
-                } catch (NoDecryptionKeyException ndke) {
+                } catch (BadPassphraseException bpe) {
+                    throw bpe;
+                } catch
+                (NoDecryptionKeyException ndke) {
                     //System.out.println("no decryption key available for keyID "+Kidney.toString(keyID));
                     //we don't need to worry about this exception here.
                 } catch (Exception x) {
@@ -142,12 +155,14 @@ public  class CryptoEngine {
                 //System.out.println("Done "+ count + "keys of "+size+" altogether, still no private key");
                 throw new DecryptionException("CryptoEngine: decryption key doesn't fit any of the locks");
             }
-        } catch (DecryptionException dx) { //don't think this is ever thrown here
+        }catch(BadPassphraseException bpe){
+            throw bpe;
+        }catch (DecryptionException dx) { //don't think this is ever thrown here
             Exceptions.dump(dx);
             throw dx;
-        } catch (Exception e) {
+        }catch (Exception e) {
             Exceptions.dump(e);
-            throw new MinigmaException("A problem arose during decryption", e);
+            throw new MinigmaOtherException("A problem arose during decryption", e);
         }
         //so we now have an encrypted data object and a key that fits it...
         try {
@@ -158,11 +173,11 @@ public  class CryptoEngine {
 
         } catch (Exception e) {
             Exceptions.dump(e);
-            throw new MinigmaException("Minigma-unLock() 3: error reading encrypted data stream", e);
+            throw new MinigmaOtherException("Minigma-unLock() 3: error reading encrypted data stream", e);
         }
     }
 
-    private static byte[] decompress (PGPCompressedData clearCompressedData) throws MinigmaException{
+    private static byte[] decompress (PGPCompressedData clearCompressedData) throws  MinigmaOtherException{
         PGPLiteralData literalData=null;
         try {
             InputStream inputStream = clearCompressedData.getDataStream();
@@ -178,7 +193,7 @@ public  class CryptoEngine {
             return MinigmaUtils.readStream(literalData.getDataStream());
         }catch(Exception e){
             Exceptions.dump(e);
-            throw new MinigmaException( "Minigma-unLock() 4: error getting decompressed object", e );
+            throw new MinigmaOtherException( "Minigma-unLock() 4: error getting decompressed object", e );
         }
     }
 

@@ -24,6 +24,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -34,7 +35,10 @@ import org.spongycastle.openpgp.PGPSecretKeyRingCollection;
 import org.spongycastle.openpgp.PGPUtil;
 import org.spongycastle.openpgp.operator.KeyFingerPrintCalculator;
 import org.spongycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+
+import uk.co.platosys.minigma.exceptions.BadPassphraseException;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
+import uk.co.platosys.minigma.exceptions.MinigmaOtherException;
 import uk.co.platosys.minigma.exceptions.NoDecryptionKeyException;
 import uk.co.platosys.minigma.utils.Kidney;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
@@ -212,7 +216,7 @@ public class Key {
      * @return a Signature object
      * @throws MinigmaException
      */
-    public Signature sign(byte[]  toBeSigned, char[] passphrase) throws MinigmaException{
+    public Signature sign(byte[]  toBeSigned, char[] passphrase) throws BadPassphraseException, MinigmaOtherException {
         BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, passphrase);
     }
@@ -223,7 +227,7 @@ public class Key {
      * @return a Signature object
      * @throws MinigmaException
      */
-    public Signature sign(BigBinary  toBeSigned, char[] passphrase) throws MinigmaException{
+    public Signature sign(BigBinary  toBeSigned, char[] passphrase) throws BadPassphraseException, MinigmaOtherException{
         BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, passphrase);
     }
@@ -234,7 +238,7 @@ public class Key {
      * @return a Signature object.
      * @throws MinigmaException
      */
-    public Signature sign(String toBeSigned, char[] passphrase) throws MinigmaException{
+    public Signature sign(String toBeSigned, char[] passphrase) throws BadPassphraseException, MinigmaOtherException{
         BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, passphrase);
     }
@@ -246,7 +250,7 @@ public class Key {
      * @return a Signature object
      * @throws MinigmaException
      */
-    public Signature sign(byte[] toBeSigned, List<Notation> notations, char[] passphrase) throws MinigmaException{
+    public Signature sign(byte[] toBeSigned, List<Notation> notations, char[] passphrase) throws BadPassphraseException, MinigmaOtherException{
         BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, notations, passphrase);
     }
@@ -258,7 +262,7 @@ public class Key {
      * @return a Signature object.
      * @throws MinigmaException
      */
-    public Signature sign(String toBeSigned, List<Notation> notations, char[] passphrase) throws MinigmaException{
+    public Signature sign(String toBeSigned, List<Notation> notations, char[] passphrase) throws BadPassphraseException, MinigmaOtherException{
         BigBinary digest= Digester.digest(toBeSigned);
         return SignatureEngine.sign(digest, this, notations, passphrase);
     }
@@ -271,19 +275,24 @@ public class Key {
      * @return a cleartext String
      * @throws Exception
      */
-    public String unlock(String ciphertext, char[] passphrase) throws Exception {
+    public String unlock(String ciphertext, char[] passphrase) throws BadPassphraseException, MinigmaOtherException{
         return unlockAsString(MinigmaUtils.decode(ciphertext),passphrase);
     }
-    public String unlockAsString(byte[] bytes, char[] passphrase) throws Exception {
-        return new String( unlockAsBytes(bytes,passphrase), "UTF-8");
+    public String unlockAsString(byte[] bytes, char[] passphrase) throws BadPassphraseException, MinigmaOtherException{
+        try {
+            return new String(unlockAsBytes(bytes, passphrase), "UTF-8");
+        }catch (UnsupportedEncodingException uex){
+            //we specify "UTF-8", this exception should never be thrown.
+            throw new MinigmaOtherException("coding unsupported", uex);
+        }
     }
     public byte[] unlockAsBytes
-            (byte[] bytes, char[] passphrase) throws Exception {
+            (byte[] bytes, char[] passphrase) throws BadPassphraseException, MinigmaOtherException {
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         return CryptoEngine.decrypt(bais, this, passphrase);
 
     }
-    public BigBinary unlock(BigBinary cipherbytes, char[] passphrase) throws Exception {
+    public BigBinary unlock(BigBinary cipherbytes, char[] passphrase) throws BadPassphraseException, MinigmaOtherException {
         return new BigBinary(unlockAsBytes(cipherbytes.toByteArray(),passphrase));
     }
 

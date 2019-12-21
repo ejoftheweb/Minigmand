@@ -45,6 +45,7 @@ import org.spongycastle.crypto.digests.SHA3Digest;
 import org.spongycastle.openpgp.PGPSignature;
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
+import uk.co.platosys.minigma.exceptions.MinigmaOtherException;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 
@@ -56,7 +57,7 @@ import uk.co.platosys.minigma.utils.MinigmaUtils;
 public class Digester {
     private static String TAG ="Digester";
 
-    public static BigBinary digest (String string) throws MinigmaException{
+    public static BigBinary digest (String string) throws MinigmaOtherException{
         return digest(string.getBytes(Charset.forName("UTF-8")));
     }
 
@@ -66,7 +67,7 @@ public class Digester {
      * @return
      * @throws MinigmaException
      */
-    public static BigBinary digest (BigBinary bigBinary) throws MinigmaException {
+    public static BigBinary digest (BigBinary bigBinary) throws MinigmaOtherException {
         return digest(bigBinary.toByteArray());
     }
     /**Takes a byte array and returns a BigBinary. Uses SHA3-256 as the digest
@@ -74,7 +75,7 @@ public class Digester {
      *
      * */
 
-    public static BigBinary digest (byte[] bytes) throws MinigmaException{
+    public static BigBinary digest (byte[] bytes) throws MinigmaOtherException{
         try{
             KeccakDigest digest = new SHA3Digest(256);
             for(byte byt:bytes){
@@ -84,7 +85,7 @@ public class Digester {
             digest.doFinal(digested, 0);
             return new BigBinary(digested);
         }catch(Exception e){
-            throw new MinigmaException("error making digest", e);
+            throw new MinigmaOtherException("error making digest", e);
         }
     }
 
