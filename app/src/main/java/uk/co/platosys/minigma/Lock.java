@@ -112,9 +112,14 @@ public class Lock {
             this.publicKeyRingCollection = new PGPPublicKeyRingCollection(bis, keyFingerPrintCalculator);
             PGPPublicKeyRing keyRing = (PGPPublicKeyRing) publicKeyRingCollection.getKeyRings().next();
             this.publicKey = keyRing.getPublicKey();
-            this.lockID=publicKey.getKeyID();
-            this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
-            this.fingerprint=new Fingerprint(publicKey.getFingerprint());
+            Iterator<String> userids = publicKey.getUserIDs();
+            while (userids.hasNext()){
+                userIDs.add(userids.next());
+            }
+
+            this.lockID = publicKey.getKeyID();
+            this.fingerprint = new Fingerprint(publicKey.getFingerprint());
+            this.shortID = MinigmaUtils.encode(publicKey.getKeyID());
 
         }catch(Exception x){
             throw new MinigmaException("error initialising minigma-lock from string", x);
@@ -183,11 +188,14 @@ public class Lock {
         }
         PGPPublicKey pubkey = pgpPublicKeyRing.getPublicKey();
         this.publicKey=pubkey;
-        this.lockID=publicKey.getKeyID();
-        this.fingerprint=new Fingerprint(publicKey.getFingerprint());
-        //Log.d(TAG, "fingerprint is "+Kidney.toString(fingerprint.getFingerprintbytes()));
-        this.shortID=MinigmaUtils.encode(publicKey.getKeyID());
-        //Log.d(TAG, "lock created with shortID "+shortID);
+        Iterator<String> userids = pubkey.getUserIDs();
+        while (userids.hasNext()){
+            userIDs.add(userids.next());
+        }
+
+        this.lockID = publicKey.getKeyID();
+        this.fingerprint = new Fingerprint(publicKey.getFingerprint());
+        this.shortID = MinigmaUtils.encode(publicKey.getKeyID());
 
     }
 
