@@ -57,7 +57,7 @@ public class Fingerprint {
         }
     }
     /**Returns this Fingerprint as a Base64 encoded String**/
-    @Override
+    @Override 
     public String toString(){
         try {
             return Base64.encode(fingerprintbytes, true);
