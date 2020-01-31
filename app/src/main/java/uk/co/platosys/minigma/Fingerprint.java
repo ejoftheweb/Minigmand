@@ -22,8 +22,10 @@ package uk.co.platosys.minigma;
 import org.spongycastle.openpgp.PGPPublicKey;
 
 import uk.co.platosys.minigma.exceptions.Exceptions;
+import uk.co.platosys.minigma.utils.Base64;
 
 import java.nio.*;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -54,7 +56,14 @@ public class Fingerprint {
             return false;
         }
     }
-
+    /**Returns this Fingerprint as a Base64 encoded String**/
+    @Override
+    public String toString(){
+        try {
+            return Base64.encode(fingerprintbytes, true);
+        }catch(Exception x){}
+        return null;
+    }
     /**Returns this Fingerprint as a byte array.
      *
      * @return
