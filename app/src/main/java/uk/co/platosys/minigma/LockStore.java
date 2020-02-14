@@ -44,9 +44,20 @@ public interface LockStore {
      */
     boolean addLock(Lock lock);
 
+    /**
+     * Removes the Lock with the given fingerprint from the Lockstore. If an implementation cannot remove
+     * a Lock it should simply return false.
+     * @param fingerprint
+     * @return
+     */
     boolean removeLock(Fingerprint fingerprint);
 
-    Lock getLock(Fingerprint fingerprint);
+    /**
+     * The most important method in the interface. All LockStores should implement this.
+     * @param fingerprint
+     * @return
+     */
+    Lock getLock(Fingerprint fingerprint) throws LockNotFoundException;
 
     Iterator<Lock> iterator() throws MinigmaException;
 

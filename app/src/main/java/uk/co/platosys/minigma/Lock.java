@@ -40,6 +40,7 @@ import org.spongycastle.bcpg.ArmoredInputStream;
 import org.spongycastle.bcpg.HashAlgorithmTags;
 import org.spongycastle.bcpg.PublicKeyAlgorithmTags;
 import org.spongycastle.bcpg.SignatureSubpacketTags;
+import org.spongycastle.bcpg.attr.ImageAttribute;
 import org.spongycastle.openpgp.*;
 import org.spongycastle.openpgp.operator.KeyFingerPrintCalculator;
 import org.spongycastle.openpgp.operator.PBESecretKeyDecryptor;
@@ -48,8 +49,10 @@ import org.spongycastle.openpgp.operator.jcajce.JcaPGPContentSignerBuilder;
 import org.spongycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.spongycastle.util.Arrays;
 
+import uk.co.platosys.minigma.exceptions.BadPassphraseException;
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
+import uk.co.platosys.minigma.exceptions.MinigmaOtherException;
 import uk.co.platosys.minigma.exceptions.SignatureException;
 import uk.co.platosys.minigma.exceptions.UnsupportedAlgorithmException;
 import uk.co.platosys.minigma.utils.Kidney;
@@ -330,6 +333,84 @@ public class Lock {
         return this;
     }
 
+    /**Adds a textual ID - such as an email address - to the Lock corresponding to the passed-in key
+     * @param id - the String id
+     * @param key the Key to certify the new Lock
+     * @param passphrase the passphrase to the Key
+     *
+     * */
+    public Certificate addID (String id, Key key, char[] passphrase)throws MinigmaOtherException, BadPassphraseException{
+
+        long lockid = key.getKeyID();
+        PGPPublicKey pgpPublicKey;
+        PGPSignatureGenerator pgpSignatureGenerator;
+        PGPPrivateKey pgpPrivateKey;
+        PGPSignature certificationSignature;
+        try {
+           pgpPublicKey = publicKeyRingCollection.getPublicKey(lockid);
+        }catch(PGPException px){
+            throw new MinigmaOtherException("lock not found corresponding to key with id:"+Kidney.toString(lockid));
+        }try {
+            pgpSignatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(pgpPublicKey.getAlgorithm(), HashAlgorithmTags.SHA512));
+            PBESecretKeyDecryptor pbeSecretKeyDecryptor = new JcePBESecretKeyDecryptorBuilder().build(passphrase);
+            pgpPrivateKey = key.getSigningKey().extractPrivateKey(pbeSecretKeyDecryptor);
+        }catch(PGPException px) {
+            throw new BadPassphraseException("Bad passphrase supplied for Key with id "+lockid);
+        }try{
+            pgpSignatureGenerator.init(PGPSignature.DEFAULT_CERTIFICATION, pgpPrivateKey);
+            certificationSignature = pgpSignatureGenerator.generateCertification(id, pgpPublicKey);
+            publicKey = PGPPublicKey.addCertification(pgpPublicKey, id, certificationSignature);
+        }catch(PGPException px){
+            throw new MinigmaOtherException("failed to certify new ID");
+        }try {
+            return new Certificate(certificationSignature);
+        }catch(MinigmaException mx){
+            throw new MinigmaOtherException("failed to create Minigma Certificate from PGP certification signature", mx);
+        }
+    }
+
+    
+    /**Adds a photo or image id to the Lock corresponding to the passed-in key. At the moment, only
+     * jpeg photos are supported, a limitation that comes from the underlying BouncyCastle implementation but
+     * apparently only because it's the only type for which a constant has been declared in ImageAttribute.
+     * @param photodata - the String id
+     * @param key the Key to certify the new Lock
+     * @param passphrase the passphrase to the Key
+     *
+     * */
+    public Certificate addImageID (byte[] photodata, Key key, char[] passphrase)throws MinigmaOtherException, BadPassphraseException{
+
+        long lockid = key.getKeyID();
+        PGPPublicKey pgpPublicKey;
+        PGPSignatureGenerator pgpSignatureGenerator;
+        PGPPrivateKey pgpPrivateKey;
+        PGPSignature certificationSignature;
+        try {
+            pgpPublicKey = publicKeyRingCollection.getPublicKey(lockid);
+        }catch(PGPException px){
+            throw new MinigmaOtherException("lock not found corresponding to key with id:"+Kidney.toString(lockid));
+        }try {
+            pgpSignatureGenerator = new PGPSignatureGenerator(new JcaPGPContentSignerBuilder(pgpPublicKey.getAlgorithm(), HashAlgorithmTags.SHA512));
+            PBESecretKeyDecryptor pbeSecretKeyDecryptor = new JcePBESecretKeyDecryptorBuilder().build(passphrase);
+            pgpPrivateKey = key.getSigningKey().extractPrivateKey(pbeSecretKeyDecryptor);
+        }catch(PGPException px) {
+            throw new BadPassphraseException("Bad passphrase supplied for Key with id "+lockid);
+        }try{
+            PGPUserAttributeSubpacketVectorGenerator pgpUserAttributeSubpacketVectorGenerator = new PGPUserAttributeSubpacketVectorGenerator();
+            pgpUserAttributeSubpacketVectorGenerator.setImageAttribute(ImageAttribute.JPEG, photodata);
+            PGPUserAttributeSubpacketVector pgpUserAttributeSubpacketVector = pgpUserAttributeSubpacketVectorGenerator.generate();
+            pgpSignatureGenerator.init(PGPSignature.DEFAULT_CERTIFICATION, pgpPrivateKey);
+            certificationSignature = pgpSignatureGenerator.generateCertification(pgpUserAttributeSubpacketVector, pgpPublicKey);
+            publicKey = PGPPublicKey.addCertification(pgpPublicKey,certificationSignature);
+        }catch(PGPException px){
+            throw new MinigmaOtherException("failed to certify new ID");
+        }try {
+            return new Certificate(certificationSignature);
+        }catch(MinigmaException mx){
+            throw new MinigmaOtherException("failed to create Minigma Certificate from PGP certification signature", mx);
+        }
+    }
+
     /**Revokes a particular public key in a Lock, generating a key revocation Certificate
      *
      * @param keyID the 64-bit ID of the public key to be revoked
@@ -398,8 +479,6 @@ public class Lock {
             Exceptions.dump(x);
             return null;
         }
-
-
     }
 
     /**
