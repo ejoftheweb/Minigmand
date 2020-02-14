@@ -369,7 +369,7 @@ public class Lock {
         }
     }
 
-    
+
     /**Adds a photo or image id to the Lock corresponding to the passed-in key. At the moment, only
      * jpeg photos are supported, a limitation that comes from the underlying BouncyCastle implementation but
      * apparently only because it's the only type for which a constant has been declared in ImageAttribute.
