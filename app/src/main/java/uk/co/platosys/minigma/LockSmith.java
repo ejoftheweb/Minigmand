@@ -37,6 +37,7 @@ import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Date;
 
+import org.apache.commons.codec.binary.Base64;
 import org.spongycastle.bcpg.ArmoredOutputStream;
 import org.spongycastle.bcpg.CompressionAlgorithmTags;
 import org.spongycastle.bcpg.HashAlgorithmTags;
@@ -64,7 +65,9 @@ import uk.co.platosys.minigma.exceptions.DuplicateNameException;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.exceptions.UnsupportedAlgorithmException;
 import uk.co.platosys.minigma.utils.FileTools;
+import uk.co.platosys.minigma.utils.Kidney;
 import uk.co.platosys.minigma.utils.MinigmaOutputStream;
+import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 /**
  * Key-pair - Lock&Key Pair generator
@@ -75,7 +78,8 @@ import uk.co.platosys.minigma.utils.MinigmaOutputStream;
  * two subkeys, one for encryption, and one for signatures.
  * But they have the same passphrase.
  *
- *
+ * The private key filename (in the keys directory) is the keyID as a url-safe Base64 String, which can be obtained
+ * from the Lock returned by calling getShortID();
  */
 
 public class LockSmith {
@@ -87,7 +91,7 @@ public class LockSmith {
      * Generat a Lock & Key pair.
      * @param keyDirectory the directory in which the private Key is to be saved. This could be on a removable drive.
      * @param lockStore the LockStore in which the Lock(the public key) generated is to be stored.
-     * @param userName
+     * //@param userName
      * @param passPhrase
      * @return The key_id of the signing key.
      * @throws MinigmaException
@@ -95,14 +99,14 @@ public class LockSmith {
     public static Lock createLockset(
             File keyDirectory,
             LockStore lockStore,
-            String userName,
+            //String userName,
             char[] passPhrase,
             int algorithm)
             throws MinigmaException,
             DuplicateNameException,
             UnsupportedAlgorithmException
     {
-        String filename;
+       // String filename;
         File keyFile;
         String masterAlgorithm;
         String encryptionAlgorithm;
@@ -110,6 +114,7 @@ public class LockSmith {
         int masterAlgorithmTag;
         int encryptionAlgorithmTag;
         int signingAlgorithmTag;
+        String idstring;
 
         //test that parameters have been set:
         if(algorithm==Algorithms.RSA){
@@ -160,6 +165,7 @@ public class LockSmith {
             generator.initialize(4096);
             masterKeyPair = generator.generateKeyPair();
             pgpMasterKeyPair=new JcaPGPKeyPair(masterAlgorithmTag, masterKeyPair, creationDate);
+            idstring = MinigmaUtils.encode(pgpMasterKeyPair.getKeyID());
 
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate master key pair", e);
@@ -196,8 +202,7 @@ public class LockSmith {
         //
 
         try {
-            filename = FileTools.removeFunnyCharacters(userName);
-            keyFile = new File(keyDirectory, filename);
+             keyFile = new File(keyDirectory, idstring);
             if (keyFile.exists()) {
                 throw new DuplicateNameException("keyfile with name " + keyFile.getName() + " already exists");
             }
@@ -223,7 +228,7 @@ public class LockSmith {
         pgpKeyRingGenerator = new PGPKeyRingGenerator(
                 PGPSignature.POSITIVE_CERTIFICATION, //certification level
                 pgpMasterKeyPair, //master key
-                userName, // id
+                idstring, // id
                 pgpChecksumCalculator,//checksum calculator, uses SHA1
                 null,//PGPSignatureSubpacketsVector hashed packets (null because a new Lock is unsigned)
                 null,//PGPSignatureSubpacketsVector unhashed packets (null because a new Lock is unsigned)

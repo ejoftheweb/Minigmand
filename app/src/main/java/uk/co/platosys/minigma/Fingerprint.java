@@ -22,14 +22,13 @@ package uk.co.platosys.minigma;
 import org.spongycastle.openpgp.PGPPublicKey;
 
 import uk.co.platosys.minigma.exceptions.Exceptions;
-import uk.co.platosys.minigma.utils.Base64;
 
 import java.nio.*;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.codec.binary.Base64;
 
 /**
  * Fingerprint is an object wrapper to a byte array used to identify
@@ -60,7 +59,7 @@ public class Fingerprint {
     @Override
     public String toString(){
         try {
-            return Base64.encode(fingerprintbytes, true);
+            return Base64.encodeBase64URLSafeString(fingerprintbytes);
         }catch(Exception x){}
         return null;
     }
