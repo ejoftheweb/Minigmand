@@ -50,6 +50,7 @@ import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.exceptions.MinigmaOtherException;
 import uk.co.platosys.minigma.exceptions.NoDecryptionKeyException;
 import uk.co.platosys.minigma.utils.Kidney;
+import uk.co.platosys.minigma.utils.MinigmaOutputStream;
 import uk.co.platosys.minigma.utils.MinigmaUtils;
 
 
@@ -236,7 +237,7 @@ public class Key {
         }
         try {
             secretKeyRingCollection = new PGPSecretKeyRingCollection(newkeys);
-            secretKeyRingCollection.encode(new FileOutputStream(file));
+            secretKeyRingCollection.encode(new MinigmaOutputStream(new FileOutputStream(file)));
         }catch(IOException iox){
             //TODO
         }catch (PGPException px){

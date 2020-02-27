@@ -54,7 +54,8 @@ public class Minigma {
     public static final Provider PROVIDER = initialiseProvider();
     public static final String LOCK_DIRNAME="lock";
     public static final String KEY_DIRNAME="key";
-    public static final String VERSION="v0.2.0.1";
+    public static final String VERSION="v0.2.0.8.1";
+    public static final String LIBRARY_NAME="Minigma";
 
     /**
      * This takes an String and encrypts it with the given Lock
