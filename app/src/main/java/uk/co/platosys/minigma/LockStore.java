@@ -58,7 +58,7 @@ public interface LockStore {
      * @return
      */
     Lock getLock(Fingerprint fingerprint) throws LockNotFoundException;
-  
+
 
     Iterator<Lock> iterator() throws MinigmaException;
 

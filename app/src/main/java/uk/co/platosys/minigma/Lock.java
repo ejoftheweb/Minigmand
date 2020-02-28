@@ -105,11 +105,21 @@ public class Lock {
      * @param encoded the base64-encoded string containing the public key
      */
     public Lock(String encoded)throws MinigmaException{
-        init(encoded);
+        byte[] bytes = MinigmaUtils.decode(encoded);
+
+        init(bytes);
     }
-    private void init(String encoded) throws MinigmaException{
+
+    /**
+     * byte array constructor
+     * @param lockbytes
+     * @throws MinigmaException
+     */
+    public Lock(byte[] lockbytes) throws MinigmaException{
+        init(lockbytes);
+    }
+    private void init(byte[] bytes) throws MinigmaException{
         try{
-            byte[] bytes = MinigmaUtils.decode(encoded);
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             KeyFingerPrintCalculator keyFingerPrintCalculator = new JcaKeyFingerprintCalculator();
             this.publicKeyRingCollection = new PGPPublicKeyRingCollection(bis, keyFingerPrintCalculator);
