@@ -90,10 +90,11 @@ public class LockSmith {
     /**
      * Generat a Lock & Key pair.
      * @param keyDirectory the directory in which the private Key is to be saved. This could be on a removable drive.
+     *                     The filename will be the fingerprint in url-safe base64
      * @param lockStore the LockStore in which the Lock(the public key) generated is to be stored.
      * //@param userName
      * @param passPhrase
-     * @return The key_id of the signing key.
+     * @return the generated Lock.
      * @throws MinigmaException
      */
     public static Lock createLockset(
@@ -160,12 +161,13 @@ public class LockSmith {
         Lock lock;
         Date creationDate = new Date();
         //The MasterKey
+        /*Note the id string which is the fingerprint in base64*/
         try {
             generator = KeyPairGenerator.getInstance(masterAlgorithm, PROVIDER);
             generator.initialize(4096);
             masterKeyPair = generator.generateKeyPair();
             pgpMasterKeyPair=new JcaPGPKeyPair(masterAlgorithmTag, masterKeyPair, creationDate);
-            idstring = MinigmaUtils.encode(pgpMasterKeyPair.getKeyID());
+            idstring = MinigmaUtils.encode(pgpMasterKeyPair.getPublicKey().getFingerprint());
 
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate master key pair", e);

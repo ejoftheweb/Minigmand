@@ -58,6 +58,12 @@ public interface LockStore {
      * @return
      */
     Lock getLock(Fingerprint fingerprint) throws LockNotFoundException;
+    /**
+     * The most important method in the interface. All LockStores should implement this.
+     * @param keyID
+     * @return
+     */
+    Lock getLock(long keyID) throws LockNotFoundException;
 
     Iterator<Lock> iterator() throws MinigmaException;
 
