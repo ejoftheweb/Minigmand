@@ -597,7 +597,19 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
         }
         return null;
     }
-    public List<Certificate> getCertificates(LockStore lockStore) throws MinigmaException{
+    /*public void addCertificate(Certificate certificate){
+        PGPSignature pgpSignature = certificate.getPgpSignature();
+
+        publicKeyRingCollection = PGPPublicKeyRingCollection.removePublicKeyRing(publicKeyRingCollection, pgpPublicKeyRing);
+        pgpPublicKeyRing = PGPPublicKeyRing.removePublicKey(pgpPublicKeyRing, publicKey);
+        publicKey = PGPPublicKey.addCertification(publicKey, pgpSignature);
+        pgpPublicKeyRing = PGPPublicKeyRing.insertPublicKey(pgpPublicKeyRing, publicKey);
+        publicKeyRingCollection = PGPPublicKeyRingCollection.addPublicKeyRing(publicKeyRingCollection, pgpPublicKeyRing);
+        lockStore.addLock(this);
+        return certificate;
+    }*/
+
+    public List<Certificate> getCertificates() throws MinigmaException{
         List<Certificate> certificates = new ArrayList<>();
         for (PGPPublicKeyRing pgpPublicKeyRing : publicKeyRingCollection){
             Iterator<PGPPublicKey> pgpPublicKeyIterator = pgpPublicKeyRing.getPublicKeys();
@@ -609,7 +621,7 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
                         PGPSignature pgpSignature = (PGPSignature) signatureIterator.next();
                         if (pgpSignature.isCertification()) {
                             long keyID = pgpSignature.getKeyID();
-                            String signerUserID = lockStore.getUserID(keyID);
+                           // String signerUserID = lockStore.getUserID(keyID);
                             Certificate certificate = new Certificate(pgpSignature);
                             certificates.add(certificate);
                         }
@@ -661,6 +673,25 @@ public void revoke(long keyID, Key key, char[] passphrase) throws MinigmaExcepti
         }
     }
 
+    /**Lock syncing syncs two versions of the same Lock (Locks accrue certifications). When a Lockstore
+     * encounters two versions of the same Lock (that is, having the same fingerprint)it merges them.
+     *
+     * @param otherLock
+     * @throws MinigmaException
+     */
+    /*public void syncLocks(Lock otherLock)throws MinigmaException {
+        if(!(otherLock.getFingerprint().equals(fingerprint))){
+            throw new MinigmaException("can only sync the same locks");
+        }
+        List<Certificate> otherCertificateList = otherLock.getCertificates();
+        List<Certificate> thisCertificateList = getCertificates();
+        otherCertificateList.addAll(thisCertificateList);
+        for(Certificate certificate:otherCertificateList){
+            if(!(thisCertificateList.contains(certificate))){
+
+            }
+        }
+    }*/
     /**
      * Returns the first userID associated with this Lock. Note that Locks, like PGPPublicKeys, can
      * have multiple userIDs associated with them.
