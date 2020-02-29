@@ -167,7 +167,7 @@ public class LockSmith {
             generator.initialize(4096);
             masterKeyPair = generator.generateKeyPair();
             pgpMasterKeyPair=new JcaPGPKeyPair(masterAlgorithmTag, masterKeyPair, creationDate);
-            idstring = MinigmaUtils.encode(pgpMasterKeyPair.getPublicKey().getFingerprint());
+            idstring = new Fingerprint(pgpMasterKeyPair.getPublicKey().getFingerprint()).toBase64String();
 
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate master key pair", e);
