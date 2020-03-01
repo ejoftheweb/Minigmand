@@ -41,7 +41,9 @@ public class Fingerprint {
     public Fingerprint(byte[] fingerprint){
         this.fingerprintbytes=fingerprint;
     }
-
+    public Fingerprint(String  base64fingerprint){
+        this.fingerprintbytes=Base64.decodeBase64(base64fingerprint);
+    }
     /**Compares this Fingerprint with another and returns true if and only if they match.
      *
      * @param object
@@ -101,6 +103,7 @@ public class Fingerprint {
             return 0;
         }
     }
+
     /**Returns a list of words representing this Fingerprint.
      * Human-mediated comparison of fingerprints is an important part of maintaining the security of
      * a distributed crypto-system based on Web-of-Trust.  It is much less error-prone for most people
