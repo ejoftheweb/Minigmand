@@ -251,6 +251,7 @@ public class LockSmith {
         MinigmaOutputStream keyOut= new MinigmaOutputStream(new FileOutputStream(keyFile));
         pgpSecretKeyRing=pgpKeyRingGenerator.generateSecretKeyRing();
         pgpSecretKeyRing.encode(keyOut);
+        keyOut.flush();
         keyOut.close();
     }catch(Exception e){
         throw new MinigmaException("Locksmith: failed to encode secret key output", e);

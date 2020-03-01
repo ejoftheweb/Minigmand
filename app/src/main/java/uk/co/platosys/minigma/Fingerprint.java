@@ -34,7 +34,7 @@ import org.apache.commons.codec.binary.Base64;
 /**
  * Fingerprint is an object wrapper to a byte array used to identify
  * keys and locks.
- * An OpenPGP fingerprint is a 160-bit/20-byte number used to confirm keys and locks.
+ * An OpenPGP fingerprint is a 160-bit/20-byte number used to confirm  the identity of PGPPublic Keys.
  */
 public class Fingerprint {
     private byte[] fingerprintbytes;
@@ -84,8 +84,8 @@ public class Fingerprint {
 
     /**
      * The OpenPGP long keyID is the 8 low-order bytes of  the fingerprint.
-     * Generally, we prefer to use the 20-byte fingerprint rather than the
-     * 8-byte keyID as an identifier, as the collision risk is thus vanishingly
+     * Generally, the 20-byte fingerprint  rather than the
+     * 8-byte keyID should be used as an identifier, as the collision risk is thus vanishingly
      * small, but the underlying BouncyCastle implementation uses the shorter keyID as
      * do quite a few public keyservers.  Since a fingerprint is 20 bytes / 160 bits,
      * this method returns the lowest 8 bytes/64 bits as a Java long primitive.

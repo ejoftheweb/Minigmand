@@ -54,7 +54,7 @@ public class Minigma {
     public static final Provider PROVIDER = initialiseProvider();
     public static final String LOCK_DIRNAME="lock";
     public static final String KEY_DIRNAME="key";
-    public static final String VERSION="v0.2.0.8.1";
+    public static final String VERSION="v0.2.0.8.7/BC v1.58.0.0";
     public static final String LIBRARY_NAME="Minigma";
 
     /**
