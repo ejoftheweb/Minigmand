@@ -28,6 +28,8 @@
 package uk.co.platosys.minigma;
 
 
+import android.util.Log;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.math.BigInteger;
@@ -167,6 +169,7 @@ public class LockSmith {
             masterKeyPair = generator.generateKeyPair();
             pgpMasterKeyPair = new JcaPGPKeyPair(masterAlgorithmTag, masterKeyPair, creationDate);
             idstring = new Fingerprint(pgpMasterKeyPair.getPublicKey().getFingerprint()).toBase64String();
+            Log.e("Locksmith", "fingerprint is:"+idstring);
 
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate master key pair", e);
@@ -202,6 +205,7 @@ public class LockSmith {
         }*/
        try {
             keyFile = new File(keyDirectory, idstring);
+            Log.d("Locksmith", keyFile.getPath());
             if (keyFile.exists()) {
                 throw new DuplicateNameException("keyfile with name " + keyFile.getName() + " already exists");
             }
@@ -257,7 +261,7 @@ public class LockSmith {
                 Key key = new Key(keyFile);
 
             }catch(Exception x){
-
+                Log.e("locksmith", "key issue", x);
             }
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to encode secret key output", e);
