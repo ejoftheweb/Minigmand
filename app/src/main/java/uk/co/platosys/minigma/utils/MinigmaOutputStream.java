@@ -33,7 +33,7 @@ public class MinigmaOutputStream extends ArmoredOutputStream {
         super(outputStream);
         setHeader("Library", Minigma.LIBRARY_NAME);
         setHeader(ArmoredOutputStream.VERSION_HDR, Minigma.VERSION+", BC:"+Minigma.BCVERSION);
-        setHeader("Comment", "Java/Android OpenPGP API built on a Bouncy Castle");
+        setHeader("Comment", Minigma.APP_DESCRIPTION);
     }
 }
 

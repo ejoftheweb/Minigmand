@@ -57,6 +57,7 @@ public class Minigma {
     public static final String VERSION="v0.2.0.9";
     public static final String BCVERSION="v1.58";
     public static final String LIBRARY_NAME="Minigma";
+    public static final String APP_DESCRIPTION="Java/Android OpenPGP API built on a Bouncy Castle";
 
     /**
      * This takes an String and encrypts it with the given Lock
