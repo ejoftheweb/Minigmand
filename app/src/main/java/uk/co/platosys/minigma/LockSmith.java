@@ -247,7 +247,8 @@ public class LockSmith {
         }
         try {
             //write the Key part to file as an OpenPGP secret keyring
-            MinigmaOutputStream keyOut = new MinigmaOutputStream(new FileOutputStream(keyFile));
+            //MinigmaOutputStream keyOut = new MinigmaOutputStream(new FileOutputStream(keyFile));
+            ArmoredOutputStream keyOut = new ArmoredOutputStream(new FileOutputStream(keyFile));
             pgpSecretKeyRing = pgpKeyRingGenerator.generateSecretKeyRing();
             pgpSecretKeyRing.encode(keyOut);
             keyOut.flush();
