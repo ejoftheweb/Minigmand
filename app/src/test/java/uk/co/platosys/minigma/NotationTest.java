@@ -5,29 +5,39 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import uk.co.platosys.minigma.exceptions.Exceptions;
 
 public class NotationTest {
     Key key;
     Signature signature;
     List<Notation> notations;
     char[][]passphrases;
-    @Before
-    public void setup() {
-        try {
-            for (char[] passphrase:passphrases) {
-                notations = new ArrayList<>();
-                for (int i = 0; i < TestValues.testNotationNames.length; i++) {
-                    notations.add(new Notation(TestValues.testNotationNames[i], TestValues.testNotationValues[i]));
-                }
-                key = new Key(new File(TestValues.keyDirectory, TestValues.testUsernames[0]));
-                signature = key.sign(TestValues.testText, notations, passphrase);
-            }
-        } catch (Exception x) {
 
+
+    LockStore lockstore;
+    //String username = TestValues.testUsernames[0];
+    Map<Fingerprint, String> createdFingerprints=new HashMap<>();
+    @Before
+    public  void setup(){
+        try {
+            if (lockstore==null){lockstore=new MinigmaLockStore(TestValues.lockFile, true);}
+            File keysDirectory = TestValues.keyDirectory;
+            if (!keysDirectory.exists()) {
+                keysDirectory.mkdirs();
+                for (int i = 0; i < TestValues.testPassPhrases.length; i++) {
+                    Lock lock = LockSmith.createLockset(TestValues.keyDirectory, lockstore,  TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                    createdFingerprints.put(lock.getFingerprint(), TestValues.testPassPhrases[i]);
+                }
+            }
+
+        }catch(Exception x){
+            Exceptions.dump("CTSCSetup", x);
         }
     }
-    @Test
     public void testNotations(){
 
     }

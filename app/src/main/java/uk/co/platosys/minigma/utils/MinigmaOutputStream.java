@@ -31,9 +31,9 @@ import java.io.OutputStream;
 public class MinigmaOutputStream extends ArmoredOutputStream {
     public MinigmaOutputStream (OutputStream outputStream){
         super(outputStream);
-        setHeader("Library:", Minigma.LIBRARY_NAME);
-        setHeader(ArmoredOutputStream.VERSION_HDR, Minigma.VERSION);
-        setHeader("Comment:", "Easy OpenPGP library for Java and Android");
+        setHeader("Library", Minigma.LIBRARY_NAME);
+        setHeader(ArmoredOutputStream.VERSION_HDR, Minigma.VERSION+", BC:"+Minigma.BCVERSION);
+        setHeader("Comment", "Java/Android OpenPGP API built on a Bouncy Castle");
     }
 }
 

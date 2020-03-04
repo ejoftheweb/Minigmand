@@ -8,19 +8,21 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class LockSmithTest {
     File testRoot = new File("/home/edward/platosys/test/minigma");
     File keyDirectory = new File(testRoot,"keys");
     File lockDirectory = new File(testRoot, "lockstore");
-   String[] testUsernames=TestValues.testUsernames;//{"testUser0", "testUser1", "testUser2", "testUser3","testUser4","testUser5","testUser6","testUser7", "testUser8", "testUser9"} ;
    String[] testPassPhrases=TestValues.testPassPhrases;//"ABCDEFG", "BCDEFGH", "CDEFGHI", "DEFGHIJ", "EFGHIJK", "FGHIJKL", "GHIJKLM", "HIJKLMN", "IJKLMNO", "JKLMNOP"};
     String testText = "Phlebas the Phoenician, a fortnight dead, " +
             "forgot the cry of gulls and the deep sea swell";
     File cipherDirectory=new File (testRoot, "ciphertext");
     File clearDirectory=new File (testRoot, "cleartext");
     LockStore lockStore;
+    Map<Fingerprint, String> createdFingerprints = new HashMap<>();
 
     @Test
     public void createMultipleLockSetTest(){
@@ -33,18 +35,19 @@ public class LockSmithTest {
 
         try {
            lockStore = new MinigmaLockStore(lockFile, true);
-           for (int i=0; i<testUsernames.length; i++) {
+           for (int i=0; i<testPassPhrases.length; i++) {
                //File keyFile = new File(keyDirectory, FileTools.removeFunnyCharacters(testUsernames[i]));
                try {
                    long startTime=System.currentTimeMillis();
-                   LockSmith.createLockset(keyDirectory, lockStore, testUsernames[i], testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                   Lock lock = LockSmith.createLockset(keyDirectory, lockStore,  testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                   createdFingerprints.put(lock.getFingerprint(), testPassPhrases[i]);
                    long endTime=System.currentTimeMillis();
                    long takenTime=endTime-startTime;
 
 
 
 
-                   System.out.println("CMLT created lockset for "+testUsernames[i] + " in "+takenTime+ "ms");
+                   System.out.println("CMLT created lockset for "+lock.getShortID() + " in "+takenTime+ "ms");
 
                }catch(DuplicateNameException dnx){
                    System.out.println(dnx.getMessage());
@@ -57,8 +60,8 @@ public class LockSmithTest {
         }
 
         assertTrue(lockFile.exists());
-        for (int i=0; i<testUsernames.length; i++){
-            assertTrue(lockStore.contains(testUsernames[i]));
+        for (Fingerprint fingerprint:createdFingerprints.keySet()){
+            assertTrue(lockStore.contains(fingerprint.toBase64String()));
         }
 
     }

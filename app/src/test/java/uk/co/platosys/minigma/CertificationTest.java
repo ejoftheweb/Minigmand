@@ -11,6 +11,7 @@ import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.utils.Kidney;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -21,23 +22,21 @@ import static org.junit.Assert.assertTrue;
 
 public class CertificationTest {
     LockStore lockstore;
-    String username = TestValues.testUsernames[0];
-
+    //String username = TestValues.testUsernames[0];
+    Map<Fingerprint, String> createdFingerprints=new HashMap<>();
     @Before
     public  void setup(){
         try {
             if (lockstore==null){lockstore=new MinigmaLockStore(TestValues.lockFile, true);}
-            if(lockstore.contains(TestValues.testUsernames[0])){
-
-            }else{
-                File keyFile = TestValues.keyDirectory;
-                if (!keyFile.exists()) {
-                    keyFile.mkdirs();
-                    for (int i = 0; i < TestValues.testUsernames.length; i++) {
-                        LockSmith.createLockset(TestValues.keyDirectory, lockstore, TestValues.testUsernames[i], TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                File keysDirectory = TestValues.keyDirectory;
+                if (!keysDirectory.exists()) {
+                   keysDirectory.mkdirs();
+                    for (int i = 0; i < TestValues.testPassPhrases.length; i++) {
+                        Lock lock = LockSmith.createLockset(TestValues.keyDirectory, lockstore,  TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                        createdFingerprints.put(lock.getFingerprint(), TestValues.testPassPhrases[i]);
                     }
                 }
-            }
+
         }catch(Exception x){
             Exceptions.dump("CTSCSetup", x);
         }
@@ -49,49 +48,46 @@ public class CertificationTest {
         boolean encryptselfsigned=false;
         boolean signselfsigned=false;
         try {
-            Lock lock = lockstore.getLock(username);
-            Iterator<PGPPublicKeyRing> publicKeyRingIterator = lock.getPGPPublicKeyRingIterator();
-            while(publicKeyRingIterator.hasNext()){
-                PGPPublicKeyRing pgpPublicKeyRing = publicKeyRingIterator.next();
-                Iterator<PGPPublicKey> publicKeyIterator = pgpPublicKeyRing.getPublicKeys();
-                while (publicKeyIterator.hasNext()){
-                    PGPPublicKey pgpPublicKey = publicKeyIterator.next();
-                    String sfprint = Fingerprint.getTestFingerprint(pgpPublicKey, 2);
-                    if (pgpPublicKey.isMasterKey()){
-                        Iterator iterator = pgpPublicKey.getSignatures();
-                        while (iterator.hasNext()){
-                            PGPSignature pgpSignature = (PGPSignature) iterator.next();
-                            if (pgpSignature.getKeyID()==lock.getLockID()){
-                                masterselfsigned=true;
+            for(Fingerprint fingerprint: createdFingerprints.keySet()) {
+                Lock lock = lockstore.getLock(fingerprint);
+                Iterator<PGPPublicKeyRing> publicKeyRingIterator = lock.getPGPPublicKeyRingIterator();
+                while (publicKeyRingIterator.hasNext()) {
+                    PGPPublicKeyRing pgpPublicKeyRing = publicKeyRingIterator.next();
+                    Iterator<PGPPublicKey> publicKeyIterator = pgpPublicKeyRing.getPublicKeys();
+                    while (publicKeyIterator.hasNext()) {
+                        PGPPublicKey pgpPublicKey = publicKeyIterator.next();
+                        String sfprint = Fingerprint.getTestFingerprint(pgpPublicKey, 2);
+                        if (pgpPublicKey.isMasterKey()) {
+                            Iterator iterator = pgpPublicKey.getSignatures();
+                            while (iterator.hasNext()) {
+                                PGPSignature pgpSignature = (PGPSignature) iterator.next();
+                                if (pgpSignature.getKeyID() == lock.getLockID()) {
+                                    masterselfsigned = true;
+                                }
                             }
-                        }
-
-                    }else if (pgpPublicKey.isEncryptionKey()){
-                        Iterator iterator = pgpPublicKey.getSignatures();
-                        while (iterator.hasNext()){
-                            PGPSignature pgpSignature = (PGPSignature) iterator.next();
-                            if (pgpSignature.getKeyID()==lock.getLockID()){
-                                encryptselfsigned=true;
+                        }else if (pgpPublicKey.isEncryptionKey()) {
+                            Iterator iterator = pgpPublicKey.getSignatures();
+                            while (iterator.hasNext()) {
+                                PGPSignature pgpSignature = (PGPSignature) iterator.next();
+                                if (pgpSignature.getKeyID() == lock.getLockID()) {
+                                    encryptselfsigned = true;
+                                }
                             }
-                        }
-
-                    }else{
-
-                        Iterator iterator = pgpPublicKey.getSignatures();
-                        while (iterator.hasNext()){
-                            PGPSignature pgpSignature = (PGPSignature) iterator.next();
-                            if (pgpSignature.getKeyID()==lock.getLockID()){
-                                signselfsigned=true;
+                        }else{
+                           Iterator iterator = pgpPublicKey.getSignatures();
+                            while (iterator.hasNext()) {
+                                PGPSignature pgpSignature = (PGPSignature) iterator.next();
+                                if (pgpSignature.getKeyID() == lock.getLockID()) {
+                                    signselfsigned = true;
+                                }
                             }
-
                         }
                     }
-
+                    //System.out.println("keycount: "+keycount);
+                    //ringcount++;
                 }
-                //System.out.println("keycount: "+keycount);
-                //ringcount++;
+                assertTrue(masterselfsigned && encryptselfsigned && signselfsigned);
             }
-            assertTrue(masterselfsigned&&encryptselfsigned&&signselfsigned);
         }catch (Exception x){
             Exceptions.dump("SCT", x);
         }
@@ -114,14 +110,13 @@ public class CertificationTest {
             System.out.println("Running Certification Test (CT1)");
 
             Map<String, Certificate> certificatesMap = new HashMap<>();
-            for (String username:TestValues.testUsernames){
-                System.out.println("CT1 certifying lock for "+username);
-
-                Lock lock =lockstore.getLock(username);
-                for (int i=0; i<TestValues.testUsernames.length; i++){
-                    String signername = TestValues.testUsernames[i];
+            for (Fingerprint fingerprint:createdFingerprints.keySet()){
+                System.out.println("CT1 certifying lock for "+fingerprint.toBase64String());
+                Lock lock =lockstore.getLock(fingerprint);
+                for (Fingerprint fingerprint1:createdFingerprints.keySet()){
+                    String signername = fingerprint1.toBase64String();
                     Key key = new Key(new File(TestValues.keyDirectory, signername),lockstore);
-                    char[] passphrase = TestValues.testPassPhrases[i].toCharArray();
+                    char[] passphrase = createdFingerprints.get(fingerprint1).toCharArray();
                     Iterator<PGPPublicKeyRing> publicKeyRingIterator = lock.getPGPPublicKeyRingIterator();
                     int ringcount=0;
                     while(publicKeyRingIterator.hasNext()){
@@ -144,10 +139,10 @@ public class CertificationTest {
             }
 
             System.out.println("Running Certification Test CT2");
-            for (String username:TestValues.testUsernames){
-                Lock lock = lockstore.getLock(username);
-                System.out.println("CT2 testing certificates for "+username+"'s lock, id:"+Kidney.toString(lock.getLockID()));
-                List<Certificate> certificates = lock.getCertificates(lockstore);
+            for (Fingerprint fingerprint: createdFingerprints.keySet()){
+                Lock lock = lockstore.getLock(fingerprint);
+                System.out.println("CT2 testing certificates for "+fingerprint.toBase64String()+"'s lock, id:"+Kidney.toString(lock.getLockID()));
+                List<Certificate> certificates = lock.getCertificates();
                 System.out.println("CT2 lock "+Kidney.toString(lock.getLockID())+" has "+certificates.size()+" certificates");
                 for(Certificate certificate:certificates){
                     System.out.println("\tCT2 attached certificate"+certificate.getShortDigest()+" was signed by "+lockstore.getUserID(certificate.getKeyID()));
@@ -176,19 +171,18 @@ public class CertificationTest {
         System.out.println("Running Certificate Revocation Test");
         try {
             LockStore lockstore = new MinigmaLockStore(TestValues.lockFile, false);
-            Lock lock = lockstore.getLock(TestValues.testUsernames[0]);
-            Fingerprint fingerprint = lock.getFingerprint();
-            Key key =  new Key(new File(TestValues.keyDirectory, TestValues.testUsernames[0]),lockstore);
+            for (Fingerprint fingerprint:createdFingerprints.keySet()) {
+                Lock lock = lockstore.getLock(fingerprint);
+                Key key = new Key(new File(TestValues.keyDirectory, fingerprint.toBase64String()), lockstore);
+                lock.revokeLock(fingerprint, key, createdFingerprints.get(fingerprint).toCharArray());
+                List<Certificate> certificatesList = lock.getCertificates();
+                for (Certificate certificate : certificatesList) {
+                    if (certificate.getType() == PGPSignature.KEY_REVOCATION) {
+                        System.out.println("Certificate is Revoked");
+                    }
 
-            lock.revokeLock(fingerprint, key, TestValues.testPassPhrases[0].toCharArray() );
-            List<Certificate> certificatesList = lock.getCertificates(lockstore);
-            for (Certificate certificate:certificatesList){
-                if (certificate.getType()== PGPSignature.KEY_REVOCATION) {
-                    System.out.println("Certificate is Revoked");
                 }
-
             }
-
         }catch(Exception e){
             Exceptions.dump(e);
         }
