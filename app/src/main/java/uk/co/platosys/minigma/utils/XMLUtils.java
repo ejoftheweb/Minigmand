@@ -17,6 +17,7 @@ import uk.co.platosys.minigma.exceptions.InvalidXMLException;
  *  Static methods to handle org.jdom2.Documents
  */
 public class XMLUtils {
+    /**Takes Base64 encoded data and returns an org.jdom2.Document**/
     public static Document decode(String encoded) throws InvalidXMLException {
 
         SAXBuilder saxBuilder = new SAXBuilder();
@@ -27,6 +28,7 @@ public class XMLUtils {
         }
 
     }
+    /**Encodes an org.jdom2.Document object as Base64 text**/
     public static String encode(Document document) throws IOException {
         XMLOutputter xmlOutputter = new XMLOutputter();
         try {
@@ -40,11 +42,13 @@ public class XMLUtils {
         }
         return null;
     }
+    /**Takes encrypted data in the form of Base64 text, the Key for which it was encrypted and its passphrase and returns an org.jdom2.Document object*/
     public static Document decrypt(String encrypted, Key key, char[] passphrase) throws InvalidXMLException, BadPassphraseException {
         //TODO
         return null;
 
     }
+    /**Encrypts an org.jdom2.Document object to the PGP Public Key represented by the supplied Lock object*/
     public static String encrypt(Document document, Lock lock){
         //TODO
         return null;
