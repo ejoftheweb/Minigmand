@@ -54,8 +54,10 @@ public class Minigma {
     public static final Provider PROVIDER = initialiseProvider();
     public static final String LOCK_DIRNAME="lock";
     public static final String KEY_DIRNAME="key";
-    public static final String VERSION="v0.2.0.8.7/BC v1.58.0.0";
+    public static final String VERSION="v0.2.0.9";
+    public static final String BCVERSION="v1.58";
     public static final String LIBRARY_NAME="Minigma";
+    public static final String APP_DESCRIPTION="Java/Android OpenPGP API built on a Bouncy Castle";
 
     /**
      * This takes an String and encrypts it with the given Lock

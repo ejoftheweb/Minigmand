@@ -3,15 +3,12 @@ package uk.co.platosys.minigma;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import uk.co.platosys.minigma.exceptions.DuplicateNameException;
-import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.utils.FileTools;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +22,8 @@ public class LockSmithTest {
     File cipherDirectory=new File (testRoot, "ciphertext");
     File clearDirectory=new File (testRoot, "cleartext");
     LockStore lockStore;
-    Map<String,String> fingerprints = new HashMap<>();
+    Map<Fingerprint, String> createdFingerprints = new HashMap<>();
+
     @Test
     public void createMultipleLockSetTest(){
         System.out.println("Running LockSmithTest: CreateMultipleLockset Test (CMLT)");
@@ -42,9 +40,14 @@ public class LockSmithTest {
                try {
                    long startTime=System.currentTimeMillis();
                    Lock lock = LockSmith.createLockset(keyDirectory, lockStore,  testPassPhrases[i].toCharArray(), Algorithms.RSA);
-                   fingerprints.put(lock.getFingerprint().toBase64String(), testPassPhrases[i]);
+                   createdFingerprints.put(lock.getFingerprint(), testPassPhrases[i]);
                    long endTime=System.currentTimeMillis();
                    long takenTime=endTime-startTime;
+
+
+
+
+                   System.out.println("CMLT created lockset for "+lock.getShortID() + " in "+takenTime+ "ms");
 
                }catch(DuplicateNameException dnx){
                    System.out.println(dnx.getMessage());
@@ -57,20 +60,8 @@ public class LockSmithTest {
         }
 
         assertTrue(lockFile.exists());
-        for (String fp:fingerprints.keySet()){
-           File keyfile = new File(keyDirectory, fp);
-           assertTrue(keyfile.exists());
-           try{
-               Key key = new Key(keyfile);
-               Lock lock = lockStore.getLock(new Fingerprint(fp));
-               String ciphertext = lock.lockAsString(testText);
-               String clearText = key.unlock(ciphertext, fingerprints.get(fp).toCharArray());
-               assertTrue(clearText.equals(testText));
-
-
-           }catch (MinigmaException mx){
-               System.out.println (mx.getMessage());
-           }
+        for (Fingerprint fingerprint:createdFingerprints.keySet()){
+            assertTrue(lockStore.contains(fingerprint.toBase64String()));
         }
 
     }

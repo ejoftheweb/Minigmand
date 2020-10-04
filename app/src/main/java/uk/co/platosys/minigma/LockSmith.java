@@ -28,6 +28,8 @@
 package uk.co.platosys.minigma;
 
 
+import android.util.Log;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.math.BigInteger;
@@ -103,11 +105,11 @@ public class LockSmith {
             //String userName,
             char[] passPhrase,
             int algorithm)
+
             throws MinigmaException,
             DuplicateNameException,
-            UnsupportedAlgorithmException
-    {
-       // String filename;
+            UnsupportedAlgorithmException {
+
         File keyFile;
         String masterAlgorithm;
         String encryptionAlgorithm;
@@ -118,14 +120,14 @@ public class LockSmith {
         String idstring;
 
         //test that parameters have been set:
-        if(algorithm==Algorithms.RSA){
-            masterAlgorithm=Algorithms.RSAS;
-            encryptionAlgorithm=Algorithms.RSAS;
-            signingAlgorithm=Algorithms.RSAS;
-            masterAlgorithmTag=PublicKeyAlgorithmTags.RSA_GENERAL;
-            encryptionAlgorithmTag=PublicKeyAlgorithmTags.RSA_ENCRYPT;
-            signingAlgorithmTag=PublicKeyAlgorithmTags.RSA_SIGN;
-        }else{
+        if (algorithm == Algorithms.RSA) {
+            masterAlgorithm = Algorithms.RSAS;
+            encryptionAlgorithm = Algorithms.RSAS;
+            signingAlgorithm = Algorithms.RSAS;
+            masterAlgorithmTag = PublicKeyAlgorithmTags.RSA_GENERAL;
+            encryptionAlgorithmTag = PublicKeyAlgorithmTags.RSA_ENCRYPT;
+            signingAlgorithmTag = PublicKeyAlgorithmTags.RSA_SIGN;
+        } else {
             throw new UnsupportedAlgorithmException("Algorithm not supported by this implementation of Minigma");
         }
         if (keyDirectory == null) {
@@ -166,8 +168,9 @@ public class LockSmith {
             generator = KeyPairGenerator.getInstance(masterAlgorithm, PROVIDER);
             generator.initialize(4096);
             masterKeyPair = generator.generateKeyPair();
-            pgpMasterKeyPair=new JcaPGPKeyPair(masterAlgorithmTag, masterKeyPair, creationDate);
+            pgpMasterKeyPair = new JcaPGPKeyPair(masterAlgorithmTag, masterKeyPair, creationDate);
             idstring = new Fingerprint(pgpMasterKeyPair.getPublicKey().getFingerprint()).toBase64String();
+            Log.e("Locksmith", "fingerprint is:"+idstring);
 
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate master key pair", e);
@@ -188,7 +191,7 @@ public class LockSmith {
             generator = KeyPairGenerator.getInstance(encryptionAlgorithm, PROVIDER);
             generator.initialize(4096);
             encryptionKeyPair = generator.generateKeyPair();
-            pgpEncryptionKeyPair=new JcaPGPKeyPair(encryptionAlgorithmTag, encryptionKeyPair,creationDate);
+            pgpEncryptionKeyPair = new JcaPGPKeyPair(encryptionAlgorithmTag, encryptionKeyPair, creationDate);
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate encryption key pair", e);
         }
@@ -201,71 +204,78 @@ public class LockSmith {
         } catch (Exception e) {
             throw new MinigmaException("Locksmith: failed to generate elgamal key pair", e);
         }*/
-        //
-
-        try {
-             keyFile = new File(keyDirectory, idstring);
+       try {
+            keyFile = new File(keyDirectory, idstring);
+            Log.d("Locksmith", keyFile.getPath());
             if (keyFile.exists()) {
                 throw new DuplicateNameException("keyfile with name " + keyFile.getName() + " already exists");
             }
 
-        }catch (DuplicateNameException dnx){
+        } catch (DuplicateNameException dnx) {
             throw dnx;
-        }catch(Exception exc){
+        } catch (Exception exc) {
             throw new MinigmaException("Locksmith: error setting up key files", exc);
         }
-        PGPDigestCalculator pgpChecksumCalculator=null;
+        PGPDigestCalculator pgpChecksumCalculator = null;
         PGPDigestCalculator pgpDigestCalculator = null;
-        PGPContentSignerBuilder pgpContentSignerBuilder=null;
-        PBESecretKeyEncryptor pbeSecretKeyEncryptor=null;
-        try{
+        PGPContentSignerBuilder pgpContentSignerBuilder = null;
+        PBESecretKeyEncryptor pbeSecretKeyEncryptor = null;
+        try {
             pgpChecksumCalculator = new JcaPGPDigestCalculatorProviderBuilder().build().get(Algorithms.STANDARDS_HASH);
             pgpDigestCalculator = new JcaPGPDigestCalculatorProviderBuilder().build().get(Algorithms.STRONG_HASH);
             pgpContentSignerBuilder = new JcaPGPContentSignerBuilder(signingAlgorithmTag, Algorithms.STRONG_HASH);
             pbeSecretKeyEncryptor = new JcePBESecretKeyEncryptorBuilder(Algorithms.SYMMETRIC_ALGORITHM, pgpDigestCalculator)
                     .setProvider(PROVIDER).build(passPhrase);
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new MinigmaException("failed to initialise KRG components", e);
-        }try{
-        pgpKeyRingGenerator = new PGPKeyRingGenerator(
-                PGPSignature.POSITIVE_CERTIFICATION, //certification level
-                pgpMasterKeyPair, //master key
-                idstring, // id
-                pgpChecksumCalculator,//checksum calculator, uses SHA1
-                null,//PGPSignatureSubpacketsVector hashed packets (null because a new Lock is unsigned)
-                null,//PGPSignatureSubpacketsVector unhashed packets (null because a new Lock is unsigned)
-                pgpContentSignerBuilder,//PGPContentSignerBuilder
-                pbeSecretKeyEncryptor//PBESecretKeyEncryptor
-        );
+        }
+        try {
+            pgpKeyRingGenerator = new PGPKeyRingGenerator(
+                    PGPSignature.POSITIVE_CERTIFICATION, //certification level
+                    pgpMasterKeyPair, //master key
+                    idstring, // id
+                    pgpChecksumCalculator,//checksum calculator, uses SHA1
+                    null,//PGPSignatureSubpacketsVector hashed packets (null because a new Lock is unsigned)
+                    null,//PGPSignatureSubpacketsVector unhashed packets (null because a new Lock is unsigned)
+                    pgpContentSignerBuilder,//PGPContentSignerBuilder
+                    pbeSecretKeyEncryptor//PBESecretKeyEncryptor
+            );
+        } catch (PGPException e) {
+            //Policy files aren't needed with Java 9. But must set policy another way.
+            throw new MinigmaException("Locksmith: failed to create PGP-keyring generator - have you installed the Sun unlimited strength policy files?", e);
+        }
+        try {
+            pgpKeyRingGenerator.addSubKey(pgpSigningKeyPair);
+            pgpKeyRingGenerator.addSubKey(pgpEncryptionKeyPair);
+        } catch (Exception e) {
+            throw new MinigmaException("Locksmith: failed to add subkeys to the master ring", e);
+        }
+        try {
+            //write the Key part to file as an OpenPGP secret keyring
+            MinigmaOutputStream keyOut = new MinigmaOutputStream(new FileOutputStream(keyFile));
+           // ArmoredOutputStream keyOut = new ArmoredOutputStream(new FileOutputStream(keyFile));
+            pgpSecretKeyRing = pgpKeyRingGenerator.generateSecretKeyRing();
+            pgpSecretKeyRing.encode(keyOut);
+            keyOut.flush();
+            keyOut.close();
+            try {
+                Key key = new Key(keyFile);
 
-    }catch(PGPException e){
-        //Policy files aren't needed with Java 9. But must set policy another way.
-        throw new MinigmaException("Locksmith: failed to create PGP-keyring generator - have you installed the Sun unlimited strength policy files?", e);
-    }try{
-        pgpKeyRingGenerator.addSubKey(pgpSigningKeyPair);
-        pgpKeyRingGenerator.addSubKey(pgpEncryptionKeyPair);
-    }catch(Exception e){
-        throw new MinigmaException("Locksmith: failed to add subkeys to the master ring", e);
-    }try{
-        //write the Key part to file as an OpenPGP secret keyring
-        MinigmaOutputStream keyOut= new MinigmaOutputStream(new FileOutputStream(keyFile));
-        pgpSecretKeyRing=pgpKeyRingGenerator.generateSecretKeyRing();
-        pgpSecretKeyRing.encode(keyOut);
-        keyOut.flush();
-        keyOut.close();
-    }catch(Exception e){
-        throw new MinigmaException("Locksmith: failed to encode secret key output", e);
-    }try{
-        // create a minigma.Lock and add it to the LockStore
-        pgpPublicKeyRing = pgpKeyRingGenerator.generatePublicKeyRing();
-        lock = new Lock(pgpPublicKeyRing);
-        lockStore.addLock(lock);
-    }catch (Exception e){
-        throw new MinigmaException("Locksmith: failed to create new Lock and add it to the LockStore",e);
-    }
-
+            }catch(Exception x){
+                Log.e("locksmith", "key issue", x);
+            }
+        } catch (Exception e) {
+            throw new MinigmaException("Locksmith: failed to encode secret key output", e);
+        }
+        try {
+            // create a minigma.Lock and add it to the LockStore
+            pgpPublicKeyRing = pgpKeyRingGenerator.generatePublicKeyRing();
+            lock = new Lock(pgpPublicKeyRing);
+            lockStore.addLock(lock);
+        } catch (Exception e) {
+            throw new MinigmaException("Locksmith: failed to create new Lock and add it to the LockStore", e);
+        }
         return lock;
-
     }
 
 

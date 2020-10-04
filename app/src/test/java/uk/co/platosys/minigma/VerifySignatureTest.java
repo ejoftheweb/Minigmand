@@ -1,8 +1,7 @@
 package uk.co.platosys.minigma;
 
+import org.junit.Before;
 import org.junit.Test;
-
-import uk.co.platosys.minigma.exceptions.DuplicateNameException;
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.utils.Kidney;
@@ -16,36 +15,36 @@ import java.util.Map;
 import static org.junit.Assert.assertTrue;
 
 public class VerifySignatureTest {
+
+    LockStore lockstore;
+    //String username = TestValues.testUsernames[0];
+    Map<Fingerprint, String> createdFingerprints=new HashMap<>();
+    @Before
+    public  void setup(){
+        try {
+            if (lockstore==null){lockstore=new MinigmaLockStore(TestValues.lockFile, true);}
+            File keysDirectory = TestValues.keyDirectory;
+            if (!keysDirectory.exists()) {
+                keysDirectory.mkdirs();
+                for (int i = 0; i < TestValues.testPassPhrases.length; i++) {
+                    Lock lock = LockSmith.createLockset(TestValues.keyDirectory, lockstore,  TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                    createdFingerprints.put(lock.getFingerprint(), TestValues.testPassPhrases[i]);
+                }
+            }
+
+        }catch(Exception x){
+            Exceptions.dump("CTSCSetup", x);
+        }
+    }
     @Test
     public void verifySignatureTest(){
         Key key=null;
         Lock lock=null;
         File signatureFile=null;
         LockStore lockStore=null;
-        Map<String,String> fingerprints = new HashMap<>();
-        try {
-            lockStore = new MinigmaLockStore(TestValues.lockFile, true);
-            for (int i=0; i<TestValues.testPassPhrases.length; i++) {
-                //File keyFile = new File(keyDirectory, FileTools.removeFunnyCharacters(testUsernames[i]));
-                try {
-                    long startTime=System.currentTimeMillis();
-                    lock = LockSmith.createLockset(TestValues.keyDirectory, lockStore,  TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
-                    fingerprints.put(lock.getFingerprint().toBase64String(), TestValues.testPassPhrases[i]);
-                    long endTime=System.currentTimeMillis();
-                    long takenTime=endTime-startTime;
-
-                }catch(DuplicateNameException dnx){
-                    System.out.println(dnx.getMessage());
-                }
-            }
-        }catch(Exception e){
-            System.out.println(e.getMessage());
-            System.out.println(e.getCause().getMessage());
-
-        }
-
-        try {
-            key = new Key(new File(TestValues.keyDirectory, TestValues.testUsernames[0]));
+        for(Fingerprint fingerprint:createdFingerprints.keySet()){
+         try {
+            key = new Key(new File(TestValues.keyDirectory, fingerprint.toBase64String()));
             Signature signature = key.sign(TestValues.testText, TestValues.testPassPhrases[0].toCharArray());
             System.out.println(Kidney.toString(signature.getKeyID())+":"+signature.getShortDigest());
             signatureFile = new File(TestValues.signatureDirectory, signature.getShortDigest());
@@ -53,10 +52,9 @@ public class VerifySignatureTest {
                 signatureFile.delete();
             }
             signature.encodeToFile(signatureFile);
-            lock = lockStore.getLock(TestValues.testUsernames[0]);
+            lock = lockStore.getLock(fingerprint);
             //System.out.println(Kidney.toString(lock.getLockID()));
         }catch(Exception e) {
-
             System.out.println("VST2 "+e.getClass().getName()+"\n "+ e.getMessage());
             StackTraceElement[] stackTraceElements = e.getStackTrace();
             for (StackTraceElement stackTraceElement:stackTraceElements){
@@ -73,7 +71,7 @@ public class VerifySignatureTest {
             for (StackTraceElement stackTraceElement:stackTraceElements){
                 System.out.println(stackTraceElement.toString());
             }
-        }
+        }}
     }
     @Test
     public void verifySignatureNotationsTest(){
@@ -86,9 +84,9 @@ public class VerifySignatureTest {
         }catch (MinigmaException e){
             Exceptions.dump(e);
         }
-
+        for(Fingerprint fingerprint:createdFingerprints.keySet()){
         try {
-            key = new Key(new File(TestValues.keyDirectory, TestValues.testUsernames[0]));
+            key = new Key(new File(TestValues.keyDirectory,fingerprint.toBase64String()));
             List<Notation> notationList = new ArrayList<>();
             for (int i=0; i<TestValues.testNotationNames.length; i++){
                 Notation notation = new Notation(TestValues.testNotationNames[i], TestValues.testNotationValues[i]);
@@ -101,7 +99,7 @@ public class VerifySignatureTest {
                 signatureFile.delete();
             }
             signature.encodeToFile(signatureFile);
-            lock = lockStore.getLock(TestValues.testUsernames[0]);
+            lock = lockStore.getLock(fingerprint);
             //System.out.println(Kidney.toString(lock.getLockID()));
         }catch(Exception e) {
             Exceptions.dump(e);
@@ -118,5 +116,5 @@ public class VerifySignatureTest {
         }catch (Exception e){
            Exceptions.dump(e);
         }
-    }
+    }}
 }

@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -236,8 +237,11 @@ public class Key {
             }
         }
         try {
+            MinigmaOutputStream keyOut = new  MinigmaOutputStream(new FileOutputStream(file));
             secretKeyRingCollection = new PGPSecretKeyRingCollection(newkeys);
-            secretKeyRingCollection.encode(new MinigmaOutputStream(new FileOutputStream(file)));
+            secretKeyRingCollection.encode(keyOut);
+            keyOut.flush();
+            keyOut.close();
         }catch(IOException iox){
             //TODO
         }catch (PGPException px){

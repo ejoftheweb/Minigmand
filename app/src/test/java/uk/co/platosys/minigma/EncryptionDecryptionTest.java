@@ -16,18 +16,18 @@ import static uk.co.platosys.minigma.TestValues.clearFile;
 
 public class EncryptionDecryptionTest {
     LockStore lockstore;
-    Map<String,String> fingerprints = new HashMap<>();
+    //String username = TestValues.testUsernames[0];
+    Map<Fingerprint, String> createdFingerprints=new HashMap<>();
     @Before
     public  void setup(){
         try {
             if (lockstore==null){lockstore=new MinigmaLockStore(TestValues.lockFile, true);}
-
-            File keyFile = TestValues.keyDirectory;
-            if (!keyFile.exists()) {
-                keyFile.mkdirs();
+            File keysDirectory = TestValues.keyDirectory;
+            if (!keysDirectory.exists()) {
+                keysDirectory.mkdirs();
                 for (int i = 0; i < TestValues.testPassPhrases.length; i++) {
-                    Lock lock = LockSmith.createLockset(TestValues.keyDirectory, lockstore, TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
-                    fingerprints.put(lock.getFingerprint().toBase64String(), TestValues.testPassPhrases[i]);
+                    Lock lock = LockSmith.createLockset(TestValues.keyDirectory, lockstore,  TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                    createdFingerprints.put(lock.getFingerprint(), TestValues.testPassPhrases[i]);
                 }
             }
 
@@ -37,13 +37,14 @@ public class EncryptionDecryptionTest {
     }
     @Test
     public void encryptionDecryptionTest(){
+        setup();
         Key key=null;
         Lock lock=null;
-        for (String fingerprint:fingerprints.keySet()) {
+        int i=1;
+        for (Fingerprint fingerprint:createdFingerprints.keySet()) {
             try {
                 //The Lock we are going to encrypt the data with)
-                lock = lockstore.getLock(new Fingerprint(fingerprint));
-
+                lock = lockstore.getLock(fingerprint);
                 //The data we are going to encrypt
                 byte[] clearbytes = MinigmaUtils.readFromBinaryFile(clearFile);
                 byte[] cipherText = lock.lock(clearbytes);
@@ -52,12 +53,12 @@ public class EncryptionDecryptionTest {
                 MinigmaUtils.encodeToArmoredFile(cipherFile, cipherText);
                 //that's it saved. Now to undo it.
 
-                key = new Key(new File(TestValues.keyDirectory,fingerprint));
+                key = new Key(new File(TestValues.keyDirectory, fingerprint.toBase64String()));
                 byte[] readCipherText = MinigmaUtils.readFromArmoredFile(cipherFile);
-                byte[] decryptedBytes = key.unlockAsBytes(readCipherText,fingerprints.get(fingerprint).toCharArray());
+                byte[] decryptedBytes = key.unlockAsBytes(readCipherText, createdFingerprints.get(fingerprint).toCharArray());
                 assertTrue(Arrays.equals(clearbytes, decryptedBytes));
                 //MinigmaUtils.writeToBinaryFile(new File(clearDirectory, "decrypted"), decryptedBytes);
-                //System.out.println("Encryption/decryption test OK on iteration "+i);
+                System.out.println("Encryption/decryption test OK on iteration "+i);
             } catch (Exception e) {
                 System.out.println("BZ "+e.getClass().getName()+"\n "+ e.getMessage());
                 //System.out.println("caused by "+e.getCause().getClass().getName()+":"+e.getCause().getMessage());
@@ -66,6 +67,7 @@ public class EncryptionDecryptionTest {
                     System.out.println(stackTraceElement.toString());
                 }
             }
+            i++;
         }
     }
 }
