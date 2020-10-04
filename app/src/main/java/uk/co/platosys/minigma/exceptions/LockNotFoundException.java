@@ -7,7 +7,7 @@ import java.lang.Exception;
  * not found.
  *
  */
-public class LockNotFoundException extends Exception {
+public class LockNotFoundException extends MinigmaException {
     public LockNotFoundException(String msg){
         super(msg);
     }

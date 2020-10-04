@@ -43,6 +43,9 @@ import static java.net.HttpURLConnection.HTTP_OK;
  * as the backing store, with which it communicates using the HKP protocol
  * based on http.
  *
+ * It is being updated to use the VKS protocol provided by the Hagrid verifying keyserver.
+ *
+ *
  */
 
 public class HKPLockStore implements LockStore {
@@ -52,8 +55,16 @@ private int port=11371; //this is the the default HKP port number
 public static final String PROTOCOL="http:";
 public static final String GET_FILE_PART="pks/lookup";
 public static final String POST_FILE_PART="pks/add";
+public static final String VKS_GET_BY_FINGERPRINT_FILE_PART="vks/v1/by-fingerprint";
+public static final String VKS_GET_BY_KEYID_FILE_PART="vks/v1/by-keyid";
+public static final String VKS_GET_BY_EMAIL_FILE_PART="vks/v1/by-email";
+public static final String VKS_UPLOAD_FILE_PART="/vks/v1/upload";
+public static final String VKS_REQUEST_VERIFY_FILE_PART="/vks/v1/request-verify";
+public static final String VKS_MIMETYPE= "application/json";
 public static final String ARMORED_PKEY_OPEN="-----BEGIN PGP PUBLIC KEY BLOCK-----";
 public static final String ARMORED_PKEY_CLOSE="-----END PGP PUBLIC KEY BLOCK-----";
+private boolean useVKS = false;
+
 private String TAG = "HKPLockstore";
 
     /**
@@ -69,9 +80,61 @@ private String TAG = "HKPLockstore";
 
     }
 
+    /**
+     *  Create an instance of the HKPLockStore by specifying a hostname and a port number to the constructor.
+     *
+     * @param host
+
+     */
+    public HKPLockStore(String host, int port){
+        this.host=host;
+        this.port=port;
+        //should  constructor verify host's existence? How?
+
+    }
 
     @Override
     public boolean addLock(Lock lock) {
+        if (useVKS) {
+            return addLockWithVKS(lock);
+        } else {
+            return addLockWithHKP(lock);
+        }
+    }
+
+    private boolean addLockWithVKS (Lock lock){
+            try {
+                URL url = new URL(PROTOCOL, host, port, POST_FILE_PART);
+
+                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                httpURLConnection.setRequestMethod("POST");
+                httpURLConnection.setDoOutput(true); //changes the default method to POST.
+                httpURLConnection.addRequestProperty("op","post");
+                httpURLConnection.addRequestProperty("options", "mr");
+                OutputStream outputStream = new BufferedOutputStream( httpURLConnection.getOutputStream());
+                outputStream.write(("keytext = ").getBytes());
+                outputStream.write(lock.toArmoredString().getBytes());
+                outputStream.flush();
+                outputStream.close();
+                int response = httpURLConnection.getResponseCode();
+                switch (response){
+                    case HTTP_OK:
+                        return true;
+                    case HTTP_ACCEPTED:
+                        return true;
+                    default:
+                        handleError(response);
+
+                }
+
+                return false;
+            }catch(Exception x){
+                return false;
+            }
+        }
+
+
+    private boolean addLockWithHKP(Lock lock){
         try {
             URL url = new URL(PROTOCOL, host, port, POST_FILE_PART);
 
@@ -231,6 +294,12 @@ private String TAG = "HKPLockstore";
 
     public void setPort(int port){
         this.port=port;
+    }
+
+    public boolean isUseVKS(){return useVKS;}
+    public boolean setUseVKS(boolean useVKS){
+        this.useVKS=useVKS;
+        return true;
     }
     private void handleError(int response){
         Log.d(TAG, "HTTP error code:"+response);

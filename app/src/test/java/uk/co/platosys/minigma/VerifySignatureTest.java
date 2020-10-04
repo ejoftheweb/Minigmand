@@ -1,13 +1,17 @@
 package uk.co.platosys.minigma;
 
 import org.junit.Test;
+
+import uk.co.platosys.minigma.exceptions.DuplicateNameException;
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.exceptions.MinigmaException;
 import uk.co.platosys.minigma.utils.Kidney;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
@@ -18,14 +22,26 @@ public class VerifySignatureTest {
         Lock lock=null;
         File signatureFile=null;
         LockStore lockStore=null;
+        Map<String,String> fingerprints = new HashMap<>();
         try {
-            lockStore = new MinigmaLockStore(new File(TestValues.lockDirectory, "lockstore"), false);
-        }catch (MinigmaException e){
-            System.out.println("VST1 "+e.getClass().getName()+"\n "+ e.getMessage());
-            StackTraceElement[] stackTraceElements = e.getStackTrace();
-            for (StackTraceElement stackTraceElement:stackTraceElements){
-                System.out.println(stackTraceElement.toString());
+            lockStore = new MinigmaLockStore(TestValues.lockFile, true);
+            for (int i=0; i<TestValues.testPassPhrases.length; i++) {
+                //File keyFile = new File(keyDirectory, FileTools.removeFunnyCharacters(testUsernames[i]));
+                try {
+                    long startTime=System.currentTimeMillis();
+                    lock = LockSmith.createLockset(TestValues.keyDirectory, lockStore,  TestValues.testPassPhrases[i].toCharArray(), Algorithms.RSA);
+                    fingerprints.put(lock.getFingerprint().toBase64String(), TestValues.testPassPhrases[i]);
+                    long endTime=System.currentTimeMillis();
+                    long takenTime=endTime-startTime;
+
+                }catch(DuplicateNameException dnx){
+                    System.out.println(dnx.getMessage());
+                }
             }
+        }catch(Exception e){
+            System.out.println(e.getMessage());
+            System.out.println(e.getCause().getMessage());
+
         }
 
         try {

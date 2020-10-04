@@ -20,8 +20,8 @@ public class NotationTest {
                 for (int i = 0; i < TestValues.testNotationNames.length; i++) {
                     notations.add(new Notation(TestValues.testNotationNames[i], TestValues.testNotationValues[i]));
                 }
-                key = new Key(new File(TestValues.keyDirectory, TestValues.testUsernames[0]));
-                signature = key.sign(TestValues.testText, notations, passphrase);
+               // key = new Key(new File(TestValues.keyDirectory, TestValues.testUsernames[0]));
+                //signature = key.sign(TestValues.testText, notations, passphrase);
             }
         } catch (Exception x) {
 

@@ -35,5 +35,19 @@ public class MinigmaOutputStream extends ArmoredOutputStream {
         setHeader(ArmoredOutputStream.VERSION_HDR, Minigma.VERSION);
         setHeader("Comment:", "Java/Android OpenPGP API built on a Bouncy Castle");
     }
+
+
+    /*
+    public MinigmaOutputStream (OutputSteam outputStream, Lock lock){
+       //data written to this stream will be encrypted with the accompanying Lock.
+    }
+    public MinigmaOutputSteam (OutputStream outputStream, Lock lock, Key key. char[] passphrase){
+    }
+     *
+     */
+    /*
+    The functionality of this class, and the corresponding but not-yet-existent MinigmaInputStream will be
+         extended to allow for signed and/or encrypted indeterminate streams, for use in an application such as
+          secure distributed videoconferencing */
 }
 
