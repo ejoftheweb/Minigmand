@@ -20,6 +20,7 @@ package uk.co.platosys.minigma;
         * SOFTWARE.*/
 
 import org.spongycastle.openpgp.PGPPublicKey;
+import org.spongycastle.util.encoders.UrlBase64;
 
 import uk.co.platosys.minigma.exceptions.Exceptions;
 import uk.co.platosys.minigma.utils.Kidney;
@@ -29,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.codec.binary.Base64;
+
 
 /**
  * Fingerprint is an object wrapper to a byte array used to identify
@@ -42,7 +43,7 @@ public class Fingerprint {
         this.fingerprintbytes=fingerprint;
     }
     public Fingerprint(String  base64fingerprint){
-        this.fingerprintbytes=Base64.decodeBase64(base64fingerprint);
+        this.fingerprintbytes= UrlBase64.decode(base64fingerprint);
     }
     /**Compares this Fingerprint with another and returns true if and only if they match.
      *
@@ -66,7 +67,7 @@ public class Fingerprint {
     /**Returns this Fingerprint as a Base64 encoded String**/
     public String toBase64String(){
         try {
-            return Base64.encodeBase64URLSafeString(fingerprintbytes);
+            return new String(UrlBase64.encode(fingerprintbytes));
         }catch(Exception x){}
         return null;
     }

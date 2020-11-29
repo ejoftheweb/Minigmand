@@ -271,10 +271,7 @@ public class Lock {
         }
 
     }
-
-
-
-    /**
+  /**
      * @return true if it verifies against this Lock, false otherwise.
      * @throws MinigmaException
      * @throws UnsupportedAlgorithmException
@@ -318,9 +315,9 @@ public class Lock {
         }catch(Exception x){
             throw new MinigmaException("Error concatenating Lock", x);
         }
-
         return this;
     }
+
     /**
      * Removes a lock. Use this method with caution! it removes all references to any public key referred to by the Lock argument.
      * This could include a key that has been added by way of another Lock. So remove carefully.

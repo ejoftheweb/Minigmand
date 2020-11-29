@@ -13,8 +13,7 @@ import uk.co.platosys.minigma.utils.MinigmaUtils;
 /**In crypto we use big binary numbers a lot. Often, the java.math class BigInteger will suffice,
  * or we can just handle the underlying byte arrays. BigBinary is a wrapper for a byte[] and includes
  * methods for instantiating from, and returning the underlying number as, a Base64 String which is often the most
- * practical way of handling it, now that the ubiquity of UTF-8 has removed most of the headache of competing
- * incompatible character sets.
+ * practical way of handling it.
  *
  * BigBinary was introduced in Minigma v0.2, replacing the earlier use of Strings as digests etc. There's
  * thus less need for Base64 coding and decoding under the hood - because BigBinary is a byte array in an Object -
